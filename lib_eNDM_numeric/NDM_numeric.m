@@ -25,10 +25,10 @@ function [y] = NDM_numeric(x0,time_stamps,C,beta)
 
 % WITH OPTIONS
 %opts = odeset('RelTol',1e-5,'AbsTol',1e-10);
-%[t,y] = ode45(@ode,time_stamps,x0,opts,C,beta);    
+[t,y] = ode45(@ode,time_stamps,x0,opts,C,beta);    
 
 % NO OPTIONS
-[t,y] = ode15s(@ode,time_stamps,x0,[],C,beta);    
+% [t,y] = ode15s(@ode,time_stamps,x0,[],C,beta);    
 
 
 y = y'; 

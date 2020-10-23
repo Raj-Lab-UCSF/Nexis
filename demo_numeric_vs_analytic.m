@@ -1,5 +1,9 @@
 %% Demo [Analytics vs Numeric]
 %
+% *****NB: Only the numeric function called is modified to include multiple costfun
+% options while we investigate the proper naming and reorganization of the
+% analytic functions*****
+
 % The goal of this demo is to apply eNDM to mouse data. 
 % Uses numerical solutions for models using ode solvers in objective functions. 
 % Several consistency checks are provided. 
@@ -23,10 +27,18 @@
     addpath([pwd '/lib_eNDM_analytic'])
 
 % Load dataset of interest
-   load celltypedata_mrx3_540.mat
-   load MouseDataForPedro.mat
+   load Tasic_CTMaps.mat %switch out for other cell type data
+   load eNDM_mousedata.mat
+   
+% Specify cost function, options: 'sse_sum', 'sse_end', 'rval_sum',
+% 'rval_end', 'LinR'
+    costfun = 'sse_sum';
+    
+% Defining LinR and type of correlation to display, R_c or R
+    LinRcalc = @(x,y) 2*corr(x,y)*std(x)*std(y)/(std(x)^2 + std(y)^2 + (mean(x) - mean(y))^2);
+    corrtype = 'R_c';
 
-% Select connectome C (426x426)
+% Select connectome C (426x426), use only ND (symmetric) for now
     C = Networks.nd;        % symmmetric  
     %C = Networks.ret;      % non-symmetric  
     %C = Networks.ant;     % non-symmetric      
@@ -40,18 +52,17 @@
     nroi = size(C,1);
 
 % Load time stamps, pathology measurements, and the seed_location 
+
+    datsetname = 'IbaHippInj';
    
-        % Hippocampus Injection   
-           time_stamps = [1,3,6];
-           pathology = data426.IbaHippInj;
+        % Mouse pathology data inputs based on datsetname     
+           time_stamps = tpts.(datsetname);
+           pathology = data426.(datsetname);
            
            pathology = pathology./norm(pathology,2);
-           seed_location = seed426.IbaHippInj;  
-
-        % Striatal Injection 
-%            time_stamps = [1,3,6];
-%            pathology = data426.IbaStrInj;
-%            seed_location = seed426.IbaStrInj;
+           seed_location = seed426.(datsetname);  
+           
+           base_location = base426.(datsetname);
            
 %% 1.  [Analytics vs Numeric] NDM, fmincon minimizing MSE  
 
@@ -82,7 +93,9 @@ if ndm_comp==1
 %    ub = [10,nansum(pathology(:,1))];
 ub = [3,3];
 % Apply fmincon w/ numeric 
-    [param_num, fval_num] = fmincon(@(param)objfun_NDM_numeric(param,seed_location,pathology,time_stamps,C),...
+%     [param_num, fval_num] = fmincon(@(param)objfun_NDM_numeric(param,seed_location,pathology,time_stamps,C),...
+%                            init_guess_params,[],[],[],[],lb,ub,[]);
+[param_num, fval_num] = fmincon(@(param)objfun_NDM_numeric_costopts(param,seed_location,pathology,time_stamps,C,costfun),...
                            init_guess_params,[],[],[],[],lb,ub,[]);
  
 % Solve NDM with the optimal parameters
@@ -107,7 +120,14 @@ ub = [3,3];
  %% Display Numeric Results
  % Save Rvalues in a matrix 
             for jj = 1:length(time_stamps)
-                 Rvalues(jj,:) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
+                 if strcmp(corrtype,'R')
+                    Rvalues(jj,:) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
+                elseif strcmp(corrtype,'R_c')
+                    naninds = isnan(pathology(:,1));
+                    newxt = ynum; newxt(naninds,:) = [];
+                    newpath = pathology; newpath(naninds,:) = [];
+                    Rvalues(jj,:) = LinRcalc(newxt(:,jj),newpath(:,jj));
+                end
             end
 
  % Display results
@@ -116,10 +136,10 @@ ub = [3,3];
     disp(' ')
     disp(['NUMERIC Beta = ' num2str(param_num(1)) ', x0 value = ' num2str(param_num(2))])
     disp(' ')
-    disp(['R values at each time stamp'])
+    disp([corrtype ' values at each time stamp'])
     disp(Rvalues)
     disp(' ')
-    disp('Square error') 
+    disp(costfun) 
     disp(fval_num)
     
 % Plot prediction vs data using optimal parameters
@@ -128,7 +148,14 @@ plot_pred_vs_data(ynum,pathology,time_stamps)
 %% Display Analytic Results
  % Save Rvalues in a matrix 
             for jj = 1:length(time_stamps)
-                 Rvalues(jj,:) = corr(yana(:,jj),pathology(:,jj), 'rows','complete');
+                if strcmp(corrtype,'R')
+                    Rvalues(jj,:) = corr(yana(:,jj),pathology(:,jj), 'rows','complete');
+                elseif strcmp(corrtype,'R_c')
+                    naninds = isnan(pathology(:,1));
+                    newxt = yana; newxt(naninds,:) = [];
+                    newpath = pathology; newpath(naninds,:) = [];
+                    Rvalues(jj,:) = LinRcalc(newxt(:,jj),newpath(:,jj));
+                end
             end
 
  % Display results
@@ -137,10 +164,10 @@ plot_pred_vs_data(ynum,pathology,time_stamps)
     disp(' ')
     disp(['ANALYTIC Beta = ' num2str(param_ana(1)) ', x0 value = ' num2str(param_ana(2))])
     disp(' ')
-    disp(['R values at each time stamp'])
+    disp([corrtype ' values at each time stamp'])
     disp(Rvalues)
     disp(' ')
-    disp('Square error') 
+    disp(costfun) 
     disp(fval_ana)
     
 % Plot prediction vs data using optimal parameters
@@ -214,7 +241,7 @@ if ndmws_comp ==1
     ub = [3,3,3];
 
 % Apply fmincon w/ numeric 
-    [param_num, fval_num] = fmincon(@(param)objfun_NDMwS_numeric(param,seed_location,pathology,time_stamps,C),...
+    [param_num, fval_num] = fmincon(@(param)objfun_NDMwS_numeric_costopts(param,seed_location,pathology,time_stamps,C,costfun),...
                            init_guess_params,[],[],[],[],lb,ub,[]);
  
 % Solve NDMwS with the optimal parameters
@@ -242,7 +269,14 @@ if ndmws_comp ==1
  %% Display Numeric Results  
  % Save Rvalues in a matrix 
             for jj = 1:length(time_stamps)
-                 Rvalues(jj,:) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
+                 if strcmp(corrtype,'R')
+                    Rvalues(jj,:) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
+                elseif strcmp(corrtype,'R_c')
+                    naninds = isnan(pathology(:,1));
+                    newxt = ynum; newxt(naninds,:) = [];
+                    newpath = pathology; newpath(naninds,:) = [];
+                    Rvalues(jj,:) = LinRcalc(newxt(:,jj),newpath(:,jj));
+                end
             end
 
  % Display results
@@ -252,10 +286,10 @@ if ndmws_comp ==1
     disp(['NUMERIC Beta = ' num2str(param_num(1)) ', x0 value = ' num2str(param_num(2)) ...
         ', alpha1 = ' num2str(param_num(3))])
     disp(' ')
-    disp(['R values at each time stamp'])
+    disp([corrtype ' values at each time stamp'])
     disp(Rvalues)
     disp(' ')
-    disp('Square error') 
+    disp(costfun) 
     disp(fval_num)
     
 % Plot prediction vs data using optimal parameters
@@ -264,7 +298,14 @@ plot_pred_vs_data(ynum,pathology,time_stamps)
 %% Display Analytic Results   
  % Save Rvalues in a matrix 
             for jj = 1:length(time_stamps)
-                 Rvalues(jj,:) = corr(yana(:,jj),pathology(:,jj), 'rows','complete');
+                 if strcmp(corrtype,'R')
+                    Rvalues(jj,:) = corr(yana(:,jj),pathology(:,jj), 'rows','complete');
+                elseif strcmp(corrtype,'R_c')
+                    naninds = isnan(pathology(:,1));
+                    newxt = yana; newxt(naninds,:) = [];
+                    newpath = pathology; newpath(naninds,:) = [];
+                    Rvalues(jj,:) = LinRcalc(newxt(:,jj),newpath(:,jj));
+                end
             end
 
  % Display results
@@ -274,10 +315,10 @@ plot_pred_vs_data(ynum,pathology,time_stamps)
     disp(['ANALYTIC Beta = ' num2str(param_ana(1)) ', x0 value = ' num2str(param_ana(2)) ...
          ', alpha1 = ' num2str(param_ana(3))])
     disp(' ')
-    disp(['R values at each time stamp'])
+    disp([corrtype ' values at each time stamp'])
     disp(Rvalues)
     disp(' ')
-    disp('Square error') 
+    disp(costfun) 
     disp(fval_ana)
     
 % Plot prediction vs data using optimal parameters
@@ -352,7 +393,7 @@ if ndmwc_comp ==1
     ub = [3,3,3];
 
 % Apply fmincon w/ numeric 
-    [param_num, fval_num] = fmincon(@(param)objfun_NDMwC_numeric(param,seed_location,pathology,time_stamps,C),...
+    [param_num, fval_num] = fmincon(@(param)objfun_NDMwC_numeric_costopts(param,seed_location,pathology,time_stamps,C,costfun),...
                            init_guess_params,[],[],[],[],lb,ub,[]);
  
 % Solve NDMwS with the optimal parameters
@@ -364,7 +405,14 @@ if ndmwc_comp ==1
  %% Display Numeric Results  
  % Save Rvalues in a matrix 
             for jj = 1:length(time_stamps)
-                 Rvalues(jj,:) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
+                 if strcmp(corrtype,'R')
+                    Rvalues(jj,:) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
+                elseif strcmp(corrtype,'R_c')
+                    naninds = isnan(pathology(:,1));
+                    newxt = ynum; newxt(naninds,:) = [];
+                    newpath = pathology; newpath(naninds,:) = [];
+                    Rvalues(jj,:) = LinRcalc(newxt(:,jj),newpath(:,jj));
+                end
             end
 
  % Display results
@@ -374,10 +422,10 @@ if ndmwc_comp ==1
     disp(['NUMERIC Beta = ' num2str(param_num(1)) ', x0 value = ' num2str(param_num(2)) ...
         ', alpha0 = ' num2str(param_num(3))])
     disp(' ')
-    disp(['R values at each time stamp'])
+    disp([corrtype ' values at each time stamp'])
     disp(Rvalues)
     disp(' ')
-    disp('Square error') 
+    disp(costfun) 
     disp(fval_num)
     
 % Plot prediction vs data using optimal parameters
@@ -424,7 +472,7 @@ if ndmwswc_comp ==1
     ub = [3,3,3,3];
 
 % Apply fmincon w/ numeric 
-    [param_num, fval_num] = fmincon(@(param)objfun_NDMwSwC_numeric(param,seed_location,pathology,time_stamps,C),...
+    [param_num, fval_num] = fmincon(@(param)objfun_NDMwSwC_numeric_costopts(param,seed_location,pathology,time_stamps,C,costfun),...
                            init_guess_params,[],[],[],[],lb,ub,[]);
  
 % Solve NDMwS with the optimal parameters
@@ -437,7 +485,14 @@ if ndmwswc_comp ==1
  %% Display Numeric Results  
  % Save Rvalues in a matrix 
             for jj = 1:length(time_stamps)
-                 Rvalues(jj,:) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
+                 if strcmp(corrtype,'R')
+                    Rvalues(jj,:) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
+                elseif strcmp(corrtype,'R_c')
+                    naninds = isnan(pathology(:,1));
+                    newxt = ynum; newxt(naninds,:) = [];
+                    newpath = pathology; newpath(naninds,:) = [];
+                    Rvalues(jj,:) = LinRcalc(newxt(:,jj),newpath(:,jj));
+                end
             end
 
  % Display results
@@ -447,10 +502,10 @@ if ndmwswc_comp ==1
     disp(['NUMERIC Beta = ' num2str(param_num(1)) ', x0 value = ' num2str(param_num(2)) ...
         ', alpha0 = ' num2str(param_num(3))  ', alpha1 = ' num2str(param_num(4))])
     disp(' ')
-    disp(['R values at each time stamp'])
+    disp([corrtype ' values at each time stamp'])
     disp(Rvalues)
     disp(' ')
-    disp('Square error') 
+    disp(costfun) 
     disp(fval_num)
     
 % Plot prediction vs data using optimal parameters
@@ -502,7 +557,7 @@ u = (u - min(u))./(max(u) - min(u));
     ub = [3,3,3];
 
 % Apply fmincon w/ numeric 
-    [param_num, fval_num] = fmincon(@(param)objfun_NDMwMC_numeric(param,seed_location,pathology,time_stamps,C,u),...
+    [param_num, fval_num] = fmincon(@(param)objfun_NDMwMC_numeric_costopts(param,seed_location,pathology,time_stamps,C,u,costfun),...
                            init_guess_params,[],[],[],[],lb,ub,[]);
  
 % Solve NDMwS with the optimal parameters
@@ -514,7 +569,14 @@ u = (u - min(u))./(max(u) - min(u));
  %% Display Numeric Results  
  % Save Rvalues in a matrix 
             for jj = 1:length(time_stamps)
-                 Rvalues(jj,:) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
+                 if strcmp(corrtype,'R')
+                    Rvalues(jj,:) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
+                elseif strcmp(corrtype,'R_c')
+                    naninds = isnan(pathology(:,1));
+                    newxt = ynum; newxt(naninds,:) = [];
+                    newpath = pathology; newpath(naninds,:) = [];
+                    Rvalues(jj,:) = LinRcalc(newxt(:,jj),newpath(:,jj));
+                end
             end
 
  % Display results
@@ -524,10 +586,10 @@ u = (u - min(u))./(max(u) - min(u));
     disp(['NUMERIC Beta = ' num2str(param_num(1)) ', x0 value = ' num2str(param_num(2)) ...
         ', alpha0 = ' num2str(param_num(3))])
     disp(' ')
-    disp(['R values at each time stamp'])
+    disp([corrtype ' values at each time stamp'])
     disp(Rvalues)
     disp(' ')
-    disp('Square error') 
+    disp(costfun) 
     disp(fval_num)
     
 % Plot prediction vs data using optimal parameters
