@@ -33,7 +33,7 @@ rowdegree = (sum(C, 2));
 L_raw = diag(rowdegree) - C;
 s_b = U * b;
 S_b = repmat(s_b,1,length(s_b)) + ones(length(s_b));
-L = L_raw .* S_b;
+L = L_raw .* S_b.';
 
 % define system dydt = Ax + B
 A = Gamma - beta * L;
