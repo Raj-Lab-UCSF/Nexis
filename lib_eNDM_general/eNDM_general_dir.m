@@ -6,7 +6,7 @@
 %   x0              = Initial Condition (n_ROI x 1)
 %   time_stamps     = provided in units given by experiment (1 x n_t)
 %   C               = connectivity matrix (n_ROI x n_ROI) - SHOULD BE
-%                               ANTEROGRADE-DIRECTED (c(1,2) = connectivity
+%                               RETROGRADE-DIRECTED (c(1,2) = connectivity
 %                               from ROI_1 to ROI_2)
 %   U               = cell types matrix (n_ROI x n_types)
 %   alpha           = global amplification/depletion term (scalar)
