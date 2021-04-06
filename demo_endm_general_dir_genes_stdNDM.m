@@ -165,7 +165,7 @@ s_num = param_num(4);
 a_num = param_num(5:(n_types+4));
 b_num = param_num((n_types+5):(2*n_types+4));
 p_num = param_num((2*n_types+5):(3*n_types+4));
-ynum = eNDM_general(x0_num,time_stamps,C,U,alpha_num,beta_num,s_num,a_num,b_num,p_num,solvetype);
+ynum = eNDM_general_dir(x0_num,time_stamps,C,U,alpha_num,beta_num,s_num,a_num,b_num,p_num,solvetype);
 
 %% Display Quantitative Results
 % Save Rvalues in a matrix
