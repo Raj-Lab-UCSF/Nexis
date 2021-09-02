@@ -62,7 +62,11 @@ for k = 1:length(fldnames)
 end
 
 if logical(outputs.ndm.Full.init.bootstrapping) || logical(outputs.endm.Full.init.bootstrapping_endm)
-    corrscell = cell(1,length(fldnames));
+    if length(fldnames) > 1
+        corrscell = cell(1,length(fldnames));
+    else
+        corrscell = cell(1,2);
+    end
     for k = 1:length(fldnames)
         tempstruct = outputs.(fldnames{k});
         subfldnames = fieldnames(tempstruct);
@@ -76,37 +80,41 @@ if logical(outputs.ndm.Full.init.bootstrapping) || logical(outputs.endm.Full.ini
         end
         clear tempstruct corrs
     end
-    datsettype = outputs.endm.Full.init.datatype_endm;
-    namelist = outputs.endm.Full.init.datalist_endm;
-    if isnumeric(namelist)
-        namelist = IndexName(namelist,datsettype);
-    end
-    if strcmp(datsettype,'gene')
-        if length(namelist) > 1
-            dattypestr = 'Genes: ';
-        else
-            dattypestr = 'Gene: ';
+    if ismember('endm',fldnames)
+        datsettype = outputs.endm.Full.init.datatype_endm;
+        namelist = outputs.endm.Full.init.datalist_endm;
+        if isnumeric(namelist)
+            namelist = IndexName(namelist,datsettype);
         end
+        if strcmp(datsettype,'gene')
+            if length(namelist) > 1
+                dattypestr = 'Genes: ';
+            else
+                dattypestr = 'Gene: ';
+            end
+        else
+            if length(namelist) > 1
+                dattypestr = 'Cell Types: ';
+            else
+                dattypestr = 'Cell Type: ';
+            end            
+        end
+        namestr = [dattypestr namelist{1}];
+        if length(namelist) > 1
+            for i = 2:length(namelist)
+                namestr = [namestr ', ' namelist{i}];
+            end
+        end
+        if logical(outputs.endm.Full.init.datapca_endm)
+            namestr = [namestr ' (1st PC)'];
+        end
+        xlabs = {'NDM',['\begin{tabular}{c} eNDM \\' namestr '\end{tabular}']};
     else
-        if length(namelist) > 1
-            dattypestr = 'Cell Types: ';
-        else
-            dattypestr = 'Cell Type: ';
-        end            
+        xlabs = {'NDM','eNDM'};
     end
-    namestr = [dattypestr namelist{1}];
-    if length(namelist) > 1
-        for i = 2:length(namelist)
-            namestr = [namestr ', ' namelist{i}];
-        end
-    end
-    if logical(outputs.endm.Full.init.datapca_endm)
-        namestr = [namestr ' (1st PC)'];
-    end
-    xlabs = {'NDM',['\begin{tabular}{c} eNDM \\' namestr '\end{tabular}']};
     cmap = [[1 0 0]; [0 0 1]];
     xlabinds = 1:length(xlabs);
-    for k = 1:length(fldnames)
+    for k = 1:length(corrscell)
         if isempty(corrscell{k})
             xlabinds(k) = NaN;
         end
@@ -157,7 +165,7 @@ if logical(outputs.ndm.Full.init.bootstrapping) || logical(outputs.endm.Full.ini
     ylabel('R^{2}');
     xlabel('');
     set(gca,'TickLength',[0 0])
-    title(sprintf('Bootstrapped Performance for Study %s',outputs.endm.Full.init.study),'FontName','Times');
+    title(sprintf('Bootstrapped Performance for Study %s',outputs.ndm.Full.init.study),'FontName','Times');
     set(gca, 'FontSize', 24, 'LineWidth', 0.75,'FontName','Times');
 end
 
