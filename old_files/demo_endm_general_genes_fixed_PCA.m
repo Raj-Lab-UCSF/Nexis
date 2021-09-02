@@ -4,11 +4,13 @@
 clear; close all; clc;
 
 % Add folder with raw data to path
-addpath('C:/Users/chait/Documents/NOTES/CHAI/UCSF/Raj_Lab/NDM/eNDM-master_genes_new/raw_data_mouse')
+% addpath('C:/Users/chait/Documents/NOTES/CHAI/UCSF/Raj_Lab/NDM/eNDM-master_genes_new/raw_data_mouse')
+addpath('/Users/justintorok/Documents/MATLAB/eNDM/lib_eNDM_general/');
+addpath('/Users/justintorok/Documents/MATLAB/eNDM/raw_data_mouse/');
 
 % Add library with eNDM functions to path
-addpath('C:/Users/chait/Documents/NOTES/CHAI/UCSF/Raj_Lab/NDM/eNDM-master_genes_new/lib_eNDM_analytic')
-addpath('C:/Users/chait/Documents/NOTES/CHAI/UCSF/Raj_Lab/NDM/eNDM-master_genes_new/lib_eNDM_numeric')
+% addpath('C:/Users/chait/Documents/NOTES/CHAI/UCSF/Raj_Lab/NDM/eNDM-master_genes_new/lib_eNDM_analytic')
+% addpath('C:/Users/chait/Documents/NOTES/CHAI/UCSF/Raj_Lab/NDM/eNDM-master_genes_new/lib_eNDM_numeric')
 
 % Load dataset of interest
 study = 'Gene';
@@ -73,7 +75,8 @@ U = score(:,1);
 if corr(score(:,1),U_mean) < 0
     U = -U;
 end
-U = (U - min(U))/(max(U) - min(U));
+% U = U_mean;
+% U = (U - min(U))/(max(U) - min(U));
 %U = U - min(U);
 %U = U / norm(U);
 %U = U - U_mean;
@@ -249,7 +252,7 @@ for dataset_itr = 1:length(dataset)
     disp(' ')
     
     % Plot prediction vs data using optimal parameters
-    plot_pred_vs_data_corr(ynum,pathology,time_stamps, datsetname)
+    plot_pred_vs_data_corr(ynum,pathology,time_stamps)
     clearvars y
     lm_endm;
     numObs1 = length(P(~isnan(P)))
@@ -263,4 +266,4 @@ for dataset_itr = 1:length(dataset)
 %     [~,indx]=ismember('Tspo',gene_names_trans)
 end
 out_final(1,2:end) = output(1,:);
-xlswrite('output.xlsx', out_final);
+% xlswrite('output.xlsx', out_final);

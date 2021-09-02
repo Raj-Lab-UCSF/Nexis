@@ -1,14 +1,14 @@
 %%  0.  Setup
 
 % Initialization
-clear; close all; clc;
+% clear; close all; clc;
 
 % Add folder with raw data to path
-addpath('C:/Users/chait/Documents/NOTES/CHAI/UCSF/Raj_Lab/NDM/eNDM-master_genes_new/raw_data_mouse')
+addpath('/Users/justintorok/Documents/MATLAB/eNDM/raw_data_mouse')
 
 % Add library with eNDM functions to path
-addpath('C:/Users/chait/Documents/NOTES/CHAI/UCSF/Raj_Lab/NDM/eNDM-master_genes_new/lib_eNDM_analytic')
-addpath('C:/Users/chait/Documents/NOTES/CHAI/UCSF/Raj_Lab/NDM/eNDM-master_genes_new/lib_eNDM_numeric')
+addpath('/Users/justintorok/Documents/MATLAB/eNDM/lib_eNDM_general')
+% addpath('C:/Users/chait/Documents/NOTES/CHAI/UCSF/Raj_Lab/NDM/eNDM-master_genes_new/lib_eNDM_numeric')
 
 % Load dataset of interest
 study = 'Gene';
@@ -19,7 +19,7 @@ load eNDM_mousedata.mat
 
 % Specify cost function, options: 'sse_sum', 'sse_end', 'rval_sum',
 % 'rval_end', 'LinR'
-costfun = 'LinR';
+costfun = 'LinR_end';
 
 % Defining LinR and type of correlation to display, R_c or R
 LinRcalc = @(x,y) 2*corr(x,y)*std(x)*std(y)/(std(x)^2 + std(y)^2 + (mean(x) - mean(y))^2);
@@ -78,9 +78,12 @@ U_Z = (U - mean(U, 2))/std(U);
 % Analytic vs. numeric ODE implementation
 solvetype = 'analytic';
 
+% With or without volume correction
+volcorrect = 1;
+
 % Load time stamps, pathology measurements, and the seed_location
 
-datsetname = 'IbaStrInj';
+datsetname = 'Hurtado';
 %BolundaDSAD,BolundaCBD,IbaHippInj,IbaStrInj,Clavaguera,Hurtado
 
 % Mouse pathology data inputs based on datsetname
@@ -147,7 +150,7 @@ ub((2*n_types+4):(3*n_types+3)) = 0;
 
 % Apply fmincon
 objfun_handle = @(param) objfun_eNDM_general_costopts(param,...
-    seed_location,pathology,time_stamps,C,U,solvetype,costfun);
+    seed_location,pathology,time_stamps,C,U,solvetype,volcorrect,costfun);
 %   options = optimoptions(@fmincon, 'Display', 'iter','Algorithm', 'sqp','MaxFunctionEvaluations',10000,'OptimalityTolerance',1e-10);
 options = optimoptions(@fmincon,'Display', 'iter', 'MaxFunctionEvaluations',10000,'OptimalityTolerance',1e-8);
 [param_num, fval_num] = fmincon(objfun_handle,init_guess_params,[],[],[],[],lb,ub,[],options);
@@ -238,13 +241,13 @@ disp(['Rsqr_adj = ' num2str(endm_Rsqr_adj)])
 disp(' ')
 
 % Plot prediction vs data using optimal parameters
-plot_pred_vs_data(ynum,pathology,time_stamps)
+plot_pred_vs_data_singleplot(ynum(:,end),pathology(:,end),time_stamps(end),datsetname)
 clearvars y
 numObs1 = length(P(~isnan(P)))
 Correlation = corrcoef(Y, P,'Rows','complete')
 logL;
 lm_endm
-xlswrite('output.xlsx', output);
+% xlswrite('output.xlsx', output);
 % [~,indx]=ismember('Trem2',gene_names_trans)
 
 flow = FlowCalculator(ynum,C,beta_num,1);

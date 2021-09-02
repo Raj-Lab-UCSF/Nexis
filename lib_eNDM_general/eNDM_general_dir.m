@@ -21,15 +21,24 @@
 % Output:
 % y  =   eNDM predicted vectors (columns) at each time stamp
 
-function [y] = eNDM_general_dir(x0,time_stamps,C,U,alpha,beta,s,a,b,p,solvetype)
-if nargin < 11
-    solvetype = 'numeric';
+function [y] = eNDM_general_dir(x0,time_stamps,C,U,alpha,beta,s,a,b,p,solvetype,volcorrect)
+if nargin < 12
+    volcorrect = 0;
+    if nargin < 11
+        solvetype = 'numeric';
+    end
 end
 
 % Define source vector s_a (n_ROI x 1)
+if size(a,2) > size(a,1)
+    a = a.';
+end
 s_a = U * a;
 
 % Define Diagonal matrix Gamma
+if size(p,2) > size(p,1)
+    p = p.';
+end
 s_p = U * p; 
 Gamma = diag(alpha + s_p);
 
@@ -37,9 +46,17 @@ Gamma = diag(alpha + s_p);
 C_dir = (1-s)*C.' + s*C;
 coldegree = (sum(C_dir, 1));
 L_raw = diag(coldegree) - C_dir;
+if size(b,2) > size(b,1)
+    b = b.';
+end
 s_b = U * b;
 S_b = repmat(s_b,1,length(s_b)) + ones(length(s_b));
 L = L_raw .* S_b.';
+if volcorrect
+    load([cd filesep 'raw_data_mouse' filesep 'regionvoxels.mat'],'voxels');
+    voxels_2hem = cat(1,voxels,voxels)/2; % approximation, splitting over the two hemispheres
+    L = mean(voxels_2hem) * diag(voxels_2hem.^(-1)) * L; % correction proposed by Putra et al. 2021
+end
 
 % define system dydt = Ax + B
 A = Gamma - beta * L;
