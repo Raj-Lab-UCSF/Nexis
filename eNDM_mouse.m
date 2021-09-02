@@ -361,7 +361,21 @@ else
             options = optimoptions(@fmincon,'Algorithm',algo,'MaxFunctionEvaluations',maxeval,...
                     'OptimalityTolerance',opttol,'FunctionTolerance',fxntol,'StepTolerance',steptol);
         end
-        [param_num, fval_num] = fmincon(objfun_handle,param_init,[],[],[],[],lb,ub,[],options);
+        try 
+            [param_num, fval_num] = fmincon(objfun_handle,param_init,[],[],[],[],lb,ub,[],options);
+        catch ME
+            fprintf('Error: %s\n',ME.message);
+            fprintf('Trying initial parameter tweak\n')
+            try 
+                param_init = lb + rand(1,length(param_init)).*(ub - lb);
+                param_init(isnan(param_init)) = 0;
+                [param_num, fval_num] = fmincon(objfun_handle,param_init,[],[],[],[],lb,ub,[],options);
+            catch ME
+                fprintf('Error: %s\n',ME.message);
+                fprintf('Skipping iteration\n');
+                continue;
+            end
+        end
 
         % Solve eNDM with the optimal parameters
         x0_num = seed_location*param_num(1);
@@ -465,9 +479,10 @@ else
     time_stamps = tpts.(ipR.study);
     pathology = normalizer(data426.(ipR.study),ipR.normtype);  
     seed_location = seed426.(ipR.study);
-    param_fits = zeros(ipR.niters_endm,length(outputs.endm.Iter_1.param_fit));
-    for i = 1:ipR.niters_endm
-        fldname = sprintf('Iter_%d',i);
+    fldnames = fieldnames(outputs.endm);
+    param_fits = zeros(length(fldnames),length(outputs.endm.(fldnames{1}).param_fit));
+    for i = 1:length(fldnames)
+        fldname = fldnames{i};
         param_fits(i,:) = outputs.endm.(fldname).param_fit;
     end
     param_opt = mean(param_fits);
