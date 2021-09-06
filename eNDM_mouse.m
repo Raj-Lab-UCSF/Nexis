@@ -133,9 +133,12 @@ elseif strcmp(ipR.datatype_endm,'ct_zeisel')
     load([cd filesep 'raw_data_mouse' filesep 'Zeisel_CTMaps.mat'],'celltypedata');
     U = celltypedata.densities(:,ind_endm);
 end
-U = U./nanmean(U);
+minU = repmat(min(U),size(U,1),1);
+maxU = repmat(max(U),size(U,1),1);
+U = (U - minU) ./ (maxU - minU);
+% U = U ./ nanmean(U);
 
-if logical(ipR.datapca_endm) && (length(ipR.dataindex_endm) > 1)
+if logical(ipR.datapca_endm) && (length(ipR.datalist_endm) > 1)
     [~, score, ~, ~, ~] = pca(U);
     U = score(:,1);
 end
@@ -336,7 +339,7 @@ else
             ub = 1.3*param_init;
             lb = 0.7*param_init;
         else
-            prct = str2double(ipR.bounds_type_endm(4:end));
+            prct = str2double(ipR.bounds_type_endm(4:end)); 
             param_init = median(param_inits);
             ub = prctile(param_inits,((100-prct)/2)+prct,1);
             lb = prctile(param_inits,((100-prct)/2),1);
