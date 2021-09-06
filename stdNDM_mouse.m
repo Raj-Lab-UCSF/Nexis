@@ -77,6 +77,7 @@ C = (C - cmin)./(cmax-cmin);
 % Solve and store results
 outputs.ndm = struct;
 if ~logical(ipR.bootstrapping)
+    fprintf('Creating Optimal NDM Model\n');
     time_stamps = tpts.(ipR.study);
     pathology = normalizer(data426.(ipR.study),ipR.normtype);
     seed_location = seed426.(ipR.study);
@@ -355,7 +356,7 @@ else
         end
     end
     
-    fprintf('Creating Optimal Model\n');
+    fprintf('Creating Optimal NDM Model\n');
     time_stamps = tpts.(ipR.study);
     pathology = normalizer(data426.(ipR.study),ipR.normtype);   
     seed_location = seed426.(ipR.study);

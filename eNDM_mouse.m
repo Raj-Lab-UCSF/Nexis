@@ -133,19 +133,24 @@ elseif strcmp(ipR.datatype_endm,'ct_zeisel')
     load([cd filesep 'raw_data_mouse' filesep 'Zeisel_CTMaps.mat'],'celltypedata');
     U = celltypedata.densities(:,ind_endm);
 end
+
+U = U ./ nanmean(U);
+if logical(ipR.datapca_endm) && (length(ipR.datalist_endm) > 1)
+    U_mean = nanmean(U,2);
+    [~, score, ~, ~, ~] = pca(U);
+    U = score(:,1);
+    if corr(U,U_mean) < 0
+        U = -U;
+    end
+end
 minU = repmat(min(U),size(U,1),1);
 maxU = repmat(max(U),size(U,1),1);
 U = (U - minU) ./ (maxU - minU);
-% U = U ./ nanmean(U);
-
-if logical(ipR.datapca_endm) && (length(ipR.datalist_endm) > 1)
-    [~, score, ~, ~, ~] = pca(U);
-    U = score(:,1);
-end
 
 % Solve and store results
 outputs.endm = struct;
 if ~logical(ipR.bootstrapping_endm)
+    fprintf('Creating Optimal eNDM Model\n');
     time_stamps = tpts.(ipR.study);
     pathology = normalizer(data426.(ipR.study),ipR.normtype);
     seed_location = seed426.(ipR.study);
@@ -478,7 +483,7 @@ else
         end
         clear ub lb param_init
     end
-    fprintf('Creating Optimal Model\n');
+    fprintf('Creating Optimal eNDM Model\n');
     time_stamps = tpts.(ipR.study);
     pathology = normalizer(data426.(ipR.study),ipR.normtype);  
     seed_location = seed426.(ipR.study);
