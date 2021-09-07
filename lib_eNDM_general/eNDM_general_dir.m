@@ -52,7 +52,7 @@ end
 s_b = U * b;
 S_b = repmat(s_b,1,length(s_b)) + ones(length(s_b));
 L = L_raw .* S_b.';
-if volcorrect
+if logical(volcorrect)
     load([cd filesep 'raw_data_mouse' filesep 'regionvoxels.mat'],'voxels');
     voxels_2hem = cat(1,voxels,voxels)/2; % approximation, splitting over the two hemispheres
     L = mean(voxels_2hem) * diag(voxels_2hem.^(-1)) * L; % correction proposed by Putra et al. 2021

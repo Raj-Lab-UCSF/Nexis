@@ -112,9 +112,6 @@ load([cd filesep 'raw_data_mouse' filesep 'eNDM_mousedata.mat'],'Networks');
 
 % Define connectome
 C = Networks.ret;
-if ~logical(ipR.w_dir)
-    C = (C + C.')/2;
-end
 
 % Normalize C (minmax)
 cmax = max(max(C));

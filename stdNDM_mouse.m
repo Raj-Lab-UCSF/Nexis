@@ -70,9 +70,6 @@ load([cd filesep 'raw_data_mouse' filesep 'eNDM_mousedata.mat'],'Networks');
 
 % Define connectome
 C = Networks.ret;
-if ~logical(ipR.w_dir)
-    C = (C + C.')/2;
-end
 
 % Normalize C (minmax)
 cmax = max(max(C));
@@ -258,8 +255,8 @@ else
             options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',algo,'MaxFunctionEvaluations',maxeval,...
                     'OptimalityTolerance',opttol,'FunctionTolerance',fxntol,'StepTolerance',steptol);
         else
-            options = optimoptions(@fmincon,'Algorithm',algo,'MaxFunctionEvaluations',maxeval,...
-                    'OptimalityTolerance',opttol,'FunctionTolerance',fxntol,'StepTolerance',steptol);
+            options = optimoptions(@fmincon,'MaxFunctionEvaluations',maxeval,...
+                    'OptimalityTolerance',opttol);
         end
         try 
             [param_num, fval_num] = fmincon(objfun_handle,param_init,[],[],[],[],lb,ub,[],options);
