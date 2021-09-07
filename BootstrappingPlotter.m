@@ -10,7 +10,7 @@ for k = 1:length(fldnames)
         for i = 1:niters
             param_fit(i,:) = tempstruct.(subfldnames{i}).param_fit;
         end
-        if ismember('endm',fldnames)
+        if ismember('endm',fldnames) && ~logical(outputs.endm.Full.init.datapca_endm)
             ntypes = length(outputs.endm.Full.init.datalist_endm);
         else
             ntypes = 1;

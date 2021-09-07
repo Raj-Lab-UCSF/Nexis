@@ -41,8 +41,9 @@ validScalar = @(x) isnumeric(x) && isscalar(x) && (x>=0);
 % validNonnegative = @(x) isnumeric(x) && all(x(:) >= 0);
 validBoolean = @(x) isscalar(x) && (x==0 || x==1);
 validChar = @(x) ischar(x);
-validStudy = @(x) ismember(x,{'IbaHippInj','IbaStrInj','Clavaguera','Hurtado'...
-                                'BolundaDSAD','BolundaCBD','DS4','DS6','DS9'});
+validStudy = @(x) ismember(x,{'IbaHippInj','IbaStrInj','Clavaguera','Hurtado',...
+                                'BolundaDSAD','BolundaCBD','DS4','DS6','DS9',...
+                                'asyn_human','asyn_mouse'});
 validST = @(x) ismember(x,{'analytic','numeric'});
 validBoundsType = @(x) strcmp(x,'old') || strcmp(x(1:2),'CI');
 validParam = @(x) (length(x) == 4);
@@ -99,6 +100,10 @@ end
 if strcmp(ipR.study(1:2),'DS')
     load([cd filesep 'raw_data_mouse' filesep 'KaufmanDiamond_datasets_dat&seed.mat'],...
         'data426','seed426','tpts');
+elseif strcmp(ipR.study(1:4),'asyn')
+    load([cd filesep 'raw_data_mouse' filesep 'mouse_aSynData_426.mat'],...
+        'data426','seed426','tpts');
+    ipR.study = ipR.study(6:end);
 else
     load([cd filesep 'raw_data_mouse' filesep 'eNDM_mousedata.mat'],...
         'data426','seed426','tpts');
@@ -219,7 +224,11 @@ if ~logical(ipR.bootstrapping_endm)
     outputs.endm.Full.param_fit = param_num;
     outputs.endm.Full.fval = fval_num;
     outputs.endm.Full.init.C = C;
-    outputs.endm.Full.init.study = ipR.study;
+    if ismember(ipR.study,{'human','mouse'})
+        outputs.endm.Full.init.study = ['asyn ' ipR.study];
+    else
+        outputs.endm.Full.init.study = ipR.study;
+    end
     outputs.endm.Full.init.solvetype = ipR.solvetype;
     outputs.endm.Full.init.volcorrect = ipR.volcorrect;
     outputs.endm.Full.init.normtype = ipR.normtype;
@@ -401,6 +410,11 @@ else
         outputs.endm.(fldname).fval = fval_num;
         outputs.endm.(fldname).init.C = C;
         outputs.endm.(fldname).init.study = ipR.study;
+        if ismember(ipR.study,{'human','mouse'})
+            outputs.endm.(fldname).init.study = ['asyn ' ipR.study];
+        else
+            outputs.endm.(fldname).init.study = ipR.study;
+        end
         outputs.endm.(fldname).init.solvetype = ipR.solvetype;
         outputs.endm.(fldname).init.volcorrect = ipR.volcorrect;
         outputs.endm.(fldname).init.normtype = ipR.normtype;
@@ -508,7 +522,7 @@ else
     outputs.endm.Full.param_fit = param_opt;
     outputs.endm.Full.fval = objfun_eNDM_general_dir_costopts(param_opt,...
         seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,ipR.costfun);
-    outputs.endm.Full.init = outputs.endm.Iter_1.init;
+    outputs.endm.Full.init = outputs.endm.(fldnames{1}).init;
     outputs.endm.Full.fmincon = [];
     Rvalues = zeros(1,length(time_stamps));
     for jj = 1:length(time_stamps)
