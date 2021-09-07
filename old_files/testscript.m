@@ -2,11 +2,11 @@
 % 
 % % clc;
 % homeo = {'P2ry12','Cx3cr1','Fcrls','Olfml3','Hexb','Siglech','Sox5','Jun'};
-% % homeo = [2344, 801, 1162, 2305, 1540, 3062, 3240, 1717];
-% outputs2 = eNDM_mouse('study','DS9','bootstrapping',1,'niters',5,...
-%     'bootstrapping_endm',1,'niters_endm',5,'verbose',0,'fmindisplay',0,...
-%     'verbose_endm',0,'fmindisplay_endm',0,'datalist_endm',{'Pvalb','Vip','Sst'});
-% Output2Table(outputs2)
+% homeo = [2344, 801, 1162, 2305, 1540, 3062, 3240, 1717];
+outputs2 = eNDM_mouse('study','DS9','bootstrapping',0,'niters',5,...
+    'bootstrapping_endm',0,'niters_endm',5,'verbose',0,'fmindisplay',0,...
+    'verbose_endm',0,'fmindisplay_endm',0);
+Output2Table(outputs2)
 % BootstrappingPlotter(outputs2);
 % CorrelationPlotter(outputs2);
 % 
