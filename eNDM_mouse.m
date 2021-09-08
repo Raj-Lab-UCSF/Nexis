@@ -19,6 +19,11 @@ w_dir_ = 0;
 param_init_ = [NaN,0.5,1,0.5];
 ub_ = [Inf,Inf,Inf,1];
 lb_ = zeros(1,4);
+algo_ = 'sqp';
+opttol_ = 1e-8;
+fxntol_ = 1e-8;
+steptol_ = 1e-12;
+maxeval_ = 10000;
 bootstrapping_ = 0;
 resample_rate_ = 0.8;
 niters_ = 100;
@@ -58,6 +63,11 @@ addParameter(ip, 'w_dir', w_dir_, validBoolean);
 addParameter(ip, 'param_init', param_init_, validParam);
 addParameter(ip, 'ub', ub_, validParam);
 addParameter(ip, 'lb', lb_, validParam);
+addParameter(ip, 'opttol', opttol_, validScalar);
+addParameter(ip, 'steptol', steptol_, validScalar);
+addParameter(ip, 'fxntol', fxntol_, validScalar);
+addParameter(ip, 'algo', algo_, validChar);
+addParameter(ip, 'maxeval', maxeval_, validScalar);
 addParameter(ip, 'bootstrapping', bootstrapping_, validBoolean);
 addParameter(ip, 'resample_rate', resample_rate_, validScalar);
 addParameter(ip, 'niters', niters_, validScalar);
@@ -194,15 +204,16 @@ if ~logical(ipR.bootstrapping_endm)
     lb = [lb(1:4),zeros(1,n_types),-Inf(1,n_types),-Inf(1,n_types)];
     ub = [ub(1:4),zeros(1,n_types),Inf(1,n_types),Inf(1,n_types)];
     
-    opttol = 1e-8; fxntol = 1e-8; steptol = 1e-12; algo = 'sqp'; maxeval = 10000;
     objfun_handle = @(param) objfun_eNDM_general_dir_costopts(param,...
         seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,ipR.costfun);
-    if logical(ipR.fmindisplay_endm)
-        options = optimoptions(@fmincon,'Display','iter','Algorithm',algo,'MaxFunctionEvaluations',maxeval,...
-                'OptimalityTolerance',opttol,'FunctionTolerance',fxntol,'StepTolerance',steptol);
+    if logical(ipR.fmindisplay)
+        options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
+            'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
+            'FunctionTolerance',ipR.fxntol,'StepTolerance',ipR.steptol);
     else
-        options = optimoptions(@fmincon,'Algorithm',algo,'MaxFunctionEvaluations',maxeval,...
-                'OptimalityTolerance',opttol,'FunctionTolerance',fxntol,'StepTolerance',steptol);
+        options = optimoptions(@fmincon,'Algorithm',ipR.algo,...
+            'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
+            'FunctionTolerance',ipR.fxntol,'StepTolerance',ipR.steptol);
     end
     [param_num, fval_num] = fmincon(objfun_handle,param_init,[],[],[],[],lb,ub,[],options);
 
@@ -241,11 +252,11 @@ if ~logical(ipR.bootstrapping_endm)
     outputs.endm.Full.init.datalist_endm = ipR.datalist_endm;
     outputs.endm.Full.init.datapca_endm = ipR.datapca_endm;
     outputs.endm.Full.init.niters_endm = ipR.niters_endm;
-    outputs.endm.Full.fmincon.optimality_tolerance = opttol;
-    outputs.endm.Full.fmincon.function_tolerance = fxntol;
-    outputs.endm.Full.fmincon.step_tolerance = steptol;
-    outputs.endm.Full.fmincon.algorithm = algo;
-    outputs.endm.Full.fmincon.max_evaluations = maxeval;
+    outputs.endm.Full.fmincon.optimality_tolerance = ipR.opttol;
+    outputs.endm.Full.fmincon.function_tolerance = ipR.fxntol;
+    outputs.endm.Full.fmincon.step_tolerance = ipR.steptol;
+    outputs.endm.Full.fmincon.algorithm = ipR.algo;
+    outputs.endm.Full.fmincon.max_evaluations = ipR.maxeval;
 
     Rvalues = zeros(1,length(time_stamps));
     for jj = 1:length(time_stamps)
@@ -365,15 +376,17 @@ else
         param_init = [param_init(1:4),zeros(1,n_types),zeros(1,n_types),zeros(1,n_types)];
         lb = [lb(1:4),zeros(1,n_types),-Inf(1,n_types),-Inf(1,n_types)];
         ub = [ub(1:4),zeros(1,n_types),Inf(1,n_types),Inf(1,n_types)];
-        opttol = 1e-8; fxntol = 1e-8; steptol = 1e-12; algo = 'sqp'; maxeval = 10000;
+
         objfun_handle = @(param) objfun_eNDM_general_dir_costopts(param,...
             seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,ipR.costfun);
-        if logical(ipR.fmindisplay_endm)
-            options = optimoptions(@fmincon,'Display','iter','Algorithm',algo,'MaxFunctionEvaluations',maxeval,...
-                    'OptimalityTolerance',opttol,'FunctionTolerance',fxntol,'StepTolerance',steptol);
+        if logical(ipR.fmindisplay)
+            options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
+                'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
+                'FunctionTolerance',ipR.fxntol,'StepTolerance',ipR.steptol);
         else
-            options = optimoptions(@fmincon,'Algorithm',algo,'MaxFunctionEvaluations',maxeval,...
-                    'OptimalityTolerance',opttol,'FunctionTolerance',fxntol,'StepTolerance',steptol);
+            options = optimoptions(@fmincon,'Algorithm',ipR.algo,...
+                'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
+                'FunctionTolerance',ipR.fxntol,'StepTolerance',ipR.steptol);
         end
         try 
             [param_num, fval_num] = fmincon(objfun_handle,param_init,[],[],[],[],lb,ub,[],options);
@@ -427,11 +440,11 @@ else
         outputs.endm.(fldname).init.datalist_endm = ipR.datalist_endm;
         outputs.endm.(fldname).init.datapca_endm = ipR.datapca_endm;
         outputs.endm.(fldname).init.niters_endm = ipR.niters_endm;
-        outputs.endm.(fldname).fmincon.optimality_tolerance = opttol;
-        outputs.endm.(fldname).fmincon.function_tolerance = fxntol;
-        outputs.endm.(fldname).fmincon.step_tolerance = steptol;
-        outputs.endm.(fldname).fmincon.algorithm = algo;
-        outputs.endm.(fldname).fmincon.max_evaluations = maxeval;
+        outputs.endm.(fldname).fmincon.optimality_tolerance = ipR.opttol;
+        outputs.endm.(fldname).fmincon.function_tolerance = ipR.fxntol;
+        outputs.endm.(fldname).fmincon.step_tolerance = ipR.steptol;
+        outputs.endm.(fldname).fmincon.algorithm = ipR.algo;
+        outputs.endm.(fldname).fmincon.max_evaluations = ipR.maxeval;
 
         Rvalues = zeros(1,length(time_stamps));
         for jj = 1:length(time_stamps)
