@@ -35,31 +35,31 @@ else
 end
 columnnames{end+1} = 'Uses PCA'; vartypes{end+1} = 'string';    
 columnnames{end+1} = 'Cost Function'; vartypes{end+1} = 'string';
-columnnames{end+1} = 'r (mean)'; vartypes{end+1} = 'double';
-columnnames{end+1} = 'r (std)'; vartypes{end+1} = 'double';
-columnnames{end+1} = 'alpha (mean)'; vartypes{end+1} = 'double';
-columnnames{end+1} = 'alpha (std)'; vartypes{end+1} = 'double';
-columnnames{end+1} = 'beta (mean)'; vartypes{end+1} = 'double';
-columnnames{end+1} = 'beta (std)'; vartypes{end+1} = 'double';
+columnnames{end+1} = 'r (Mean)'; vartypes{end+1} = 'double';
+columnnames{end+1} = 'r (95% CI)'; vartypes{end+1} = 'cell';
+columnnames{end+1} = 'alpha (Mean)'; vartypes{end+1} = 'double';
+columnnames{end+1} = 'alpha (95% CI)'; vartypes{end+1} = 'cell';
+columnnames{end+1} = 'beta (Mean)'; vartypes{end+1} = 'double';
+columnnames{end+1} = 'beta (95% CI)'; vartypes{end+1} = 'cell';
 if logical(outputs.(fldnames{1}).Full.init.w_dir)    
-    columnnames{end+1} = 's (mean)'; vartypes{end+1} = 'double';
-    columnnames{end+1} = 's (std)'; vartypes{end+1} = 'double';
+    columnnames{end+1} = 's (Mean)'; vartypes{end+1} = 'double';
+    columnnames{end+1} = 's (95% CI)'; vartypes{end+1} = 'cell';
 end
 if ismember('endm',fldnames) && (length(outputs.endm.Full.init.datalist_endm)>1)...
         && ~logical(outputs.endm.Full.init.datapca_endm)
     for i = 1:length(outputs.endm.Full.init.datalist_endm)
-        columnnames{end+1} = sprintf('b%d (mean)',i); vartypes{end+1} = 'double';
-        columnnames{end+1} = sprintf('b%d (std)',i); vartypes{end+1} = 'double';
+        columnnames{end+1} = sprintf('b%d (Mean)',i); vartypes{end+1} = 'double';
+        columnnames{end+1} = sprintf('b%d (95% CI)',i); vartypes{end+1} = 'cell';
     end
     for i = 1:length(outputs.endm.Full.init.datalist_endm)
-        columnnames{end+1} = sprintf('p%d (mean)',i); vartypes{end+1} = 'double';
-        columnnames{end+1} = sprintf('p%d (std)',i); vartypes{end+1} = 'double';
+        columnnames{end+1} = sprintf('p%d (Mean)',i); vartypes{end+1} = 'double';
+        columnnames{end+1} = sprintf('p%d (95% CI)',i); vartypes{end+1} = 'cell';
     end
 else
-    columnnames{end+1} = 'b (mean)'; vartypes{end+1} = 'double';
-    columnnames{end+1} = 'b (std)'; vartypes{end+1} = 'double';
-    columnnames{end+1} = 'p (mean)'; vartypes{end+1} = 'double';
-    columnnames{end+1} = 'p (std)'; vartypes{end+1} = 'double';
+    columnnames{end+1} = 'b (Mean)'; vartypes{end+1} = 'double';
+    columnnames{end+1} = 'b (95% CI)'; vartypes{end+1} = 'cell';
+    columnnames{end+1} = 'p (Mean)'; vartypes{end+1} = 'double';
+    columnnames{end+1} = 'p (95% CI)'; vartypes{end+1} = 'cell';
 end
 
 ts = outputs.(fldnames{1}).Full.time_stamps;
@@ -131,14 +131,16 @@ for k = 1:length(rownames)
         end
         for i = 1:length(params)
             summarytable{k,index} = params(i); index = index + 1;
-            summarytable{k,index} = 0; index = index + 1;
+            summarytable{k,index} = {[params(i) params(i)]}; index = index + 1;
         end
     else
         params = zeros((length(subfldnames)-1),length(outputs.(fldnames{k}).Full.param_fit));
         for i = 1:size(params,1)
             params(i,:) = outputs.(fldnames{k}).(subfldnames{i}).param_fit;
         end
-        params_mean = mean(params); params_std = std(params);
+        params_mean = mean(params); 
+        params_ci95_lb = prctile(params,2.5,1); params_ci95_ub = prctile(params,97.5,1);
+        params_ci95 = cat(1,params_ci95_lb,params_ci95_ub);
         inclinds = 1:length(params_mean);
         if ~logical(outputs.(fldnames{k}).Full.init.w_dir)
             inclinds(4) = NaN;
@@ -150,16 +152,16 @@ for k = 1:length(rownames)
             inclinds(5) = NaN;
         end
         params_mean = params_mean(~isnan(inclinds)); 
-        params_std = params_std(~isnan(inclinds));
+        params_ci95 = params_ci95(:,~isnan(inclinds));
         if strcmp('ndm',fldnames{k}) && ismember('endm',fldnames) &&...
                 (length(outputs.endm.Full.init.datalist_endm)>1) &&...
                 ~logical(outputs.endm.Full.init.datapca_endm)
             params_mean = [params_mean, zeros(1,2*(length(outputs.endm.Full.init.datalist_endm)-1))];
-            params_std = [params_std, zeros(1,2*(length(outputs.endm.Full.init.datalist_endm))-1)];
+            params_ci95 = [params_ci95, zeros(2,2*(length(outputs.endm.Full.init.datalist_endm))-1)];
         end
         for i = 1:length(params_mean)
             summarytable{k,index} = params_mean(i); index = index + 1;
-            summarytable{k,index} = params_std(i); index = index + 1;
+            summarytable{k,index} = {params_ci95(:,i).'}; index = index + 1;
         end
     end
     ts = outputs.(fldnames{1}).Full.time_stamps;

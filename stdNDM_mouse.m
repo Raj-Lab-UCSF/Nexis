@@ -23,8 +23,8 @@ maxeval_ = 10000;
 bootstrapping_ = 0;
 resample_rate_ = 0.8;
 niters_ = 100;
-verbose_ = 1;
-fmindisplay_ = 1;
+verbose_ = 0;
+fmindisplay_ = 0;
 flowthresh_ = 99.93;
 
 ip = inputParser;

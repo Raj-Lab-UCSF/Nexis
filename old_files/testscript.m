@@ -10,6 +10,12 @@
 % BootstrappingPlotter(outputs2);
 % CorrelationPlotter(outputs2);
 % 
+homeo = [2344, 801, 1162, 2305, 1540, 3062, 3240, 1717];
+rng(3);
+outputs3 = eNDM_mouse('study','DS9','bootstrapping',1,'niters',3,'w_dir',0,...
+    'bootstrapping_endm',1,'niters_endm',3,'datalist_endm',homeo(1:3));
+x = Output2Table(outputs3); 
+
 % 
 % outputs3 = eNDM_mouse('study','DS9','bootstrapping',1,'niters',2,...
 %     'bootstrapping_endm',1,'niters_endm',2,'verbose',0,'fmindisplay',0,...
