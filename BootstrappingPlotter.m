@@ -16,14 +16,14 @@ for k = 1:length(fldnames)
             ntypes = 1;
         end
         if ntypes == 1
-            xlabs = {'r','$\alpha$','$\beta$','$s$','$a$','$b$','$p$'};
+            xlabs = {'$\gamma$','$\alpha$','$\beta$','$s$','$a$','$b$','$p$'};
         else
             for i = 1:ntypes
                 acell{i} = sprintf('$a_{%d}$',i);
                 bcell{i} = sprintf('$b_{%d}$',i);
                 pcell{i} = sprintf('$p_{%d}$',i);
             end
-            xlabs = cat(2,{'r','$\alpha$','$\beta$','$s$'},acell,bcell,pcell);
+            xlabs = cat(2,{'$\gamma$','$\alpha$','$\beta$','$s$'},acell,bcell,pcell);
         end
         cmap = hsv(length(xlabs));
         xlabinds = 1:size(param_fit,2);

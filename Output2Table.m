@@ -35,8 +35,8 @@ else
 end
 columnnames{end+1} = 'Uses PCA'; vartypes{end+1} = 'string';    
 columnnames{end+1} = 'Cost Function'; vartypes{end+1} = 'string';
-columnnames{end+1} = 'r (Mean)'; vartypes{end+1} = 'double';
-columnnames{end+1} = 'r (95% CI)'; vartypes{end+1} = 'cell';
+columnnames{end+1} = 'gamma (Mean)'; vartypes{end+1} = 'double';
+columnnames{end+1} = 'gamma (95% CI)'; vartypes{end+1} = 'cell';
 columnnames{end+1} = 'alpha (Mean)'; vartypes{end+1} = 'double';
 columnnames{end+1} = 'alpha (95% CI)'; vartypes{end+1} = 'cell';
 columnnames{end+1} = 'beta (Mean)'; vartypes{end+1} = 'double';
