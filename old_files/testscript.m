@@ -1,26 +1,29 @@
-studies = {'asyn_mouse','asyn_human'};
-genesets = {{'Trem2'},{'P2ry12','Cx3cr1','Fcrls','Olfml3','Hexb','Siglech','Sox5','Jun'},...
-    {'P2ry12','Cx3cr1','Fcrls','Olfml3','Hexb','Siglech','Sox5','Jun','Trem2'}};
-datapca = [0 1 1];
-setnames = {'Trem2_only','Homeostatic','Homeostatic+Trem2'};
-for i = 1:length(studies)
-    outputs1 = stdNDM_mouse('study',studies{i},'bootstrapping',1,'niters',100,'verbose',0,'fmindisplay',0);
-    for j = 1:length(genesets)
-        outputs2 = eNDM_mouse('outputs_ndm',outputs1,'study',studies{i},...
-            'bootstrapping_endm',1,'niters_endm',100,'verbose',0,'fmindisplay',0,...
-            'verbose_endm',0,'fmindisplay_endm',0,'datalist_endm',genesets{j},'datapca_endm',datapca(j));
-        Output2Table(outputs2,1,[studies{i} '_' setnames{j} '_output_table'])
-        BootstrappingPlotter(outputs2);
-        CorrelationPlotter(outputs2);
-        save([studies{i} '_' setnames{j} '_outputs.mat'],'outputs2','-v7.3');
-    end
-end
+% studies = {'asyn_mouse','asyn_human'};
+% genesets = {{'Trem2'},{'P2ry12','Cx3cr1','Fcrls','Olfml3','Hexb','Siglech','Sox5','Jun'},...
+%     {'P2ry12','Cx3cr1','Fcrls','Olfml3','Hexb','Siglech','Sox5','Jun','Trem2'}};
+% datapca = [0 1 1];
+% setnames = {'Trem2_only','Homeostatic','Homeostatic+Trem2'};
+% for i = 1:length(studies)
+%     outputs1 = stdNDM_mouse('study',studies{i},'bootstrapping',1,'niters',100,'verbose',0,'fmindisplay',0);
+%     for j = 1:length(genesets)
+%         outputs2 = eNDM_mouse('outputs_ndm',outputs1,'study',studies{i},...
+%             'bootstrapping_endm',1,'niters_endm',100,'verbose',0,'fmindisplay',0,...
+%             'verbose_endm',0,'fmindisplay_endm',0,'datalist_endm',genesets{j},'datapca_endm',datapca(j));
+%         Output2Table(outputs2,1,[studies{i} '_' setnames{j} '_output_table'])
+%         BootstrappingPlotter(outputs2);
+%         CorrelationPlotter(outputs2);
+%         save([studies{i} '_' setnames{j} '_outputs.mat'],'outputs2','-v7.3');
+%     end
+% end
 % 
 % homeo = [2344, 801, 1162, 2305, 1540, 3062, 3240, 1717];
-% rng(3);
-% outputs3 = eNDM_mouse('study','DS9','bootstrapping',1,'niters',3,'w_dir',0,...
-%     'bootstrapping_endm',1,'niters_endm',3,'datalist_endm',homeo(1:3));
-% x = Output2Table(outputs3); 
+rng(2);
+outputs3 = stdNDM_mouse('study','DS9','bootstrapping',1,'niters',3,'w_dir',0,...
+    'exclseed_costfun',1);
+outputs4 = eNDM_mouse('outputs_ndm',outputs3,'study','DS9','bootstrapping',1,'niters',3,'w_dir',0,...
+    'bootstrapping_endm',1,'niters_endm',3,'datalist_endm',{'Trem2'},...
+    'exclseed_costfun',1);
+x = Output2Table(outputs4); 
 
 % 
 % outputs3 = eNDM_mouse('study','DS9','bootstrapping',1,'niters',2,...

@@ -10,6 +10,8 @@ study_ = 'IbaHippInj';
 costfun_ = 'LinR';
 solvetype_ = 'analytic';
 volcorrect_ = 0;
+exclseed_costfun_ = 0;
+excltpts_costfun_ = [];
 normtype_ = 'sum';
 w_dir_ = 0; 
 param_init_ = [NaN,0.5,1,0.5];
@@ -42,6 +44,8 @@ addParameter(ip, 'study', study_, validStudy);
 addParameter(ip, 'costfun', costfun_, validChar);
 addParameter(ip, 'solvetype', solvetype_, validST);
 addParameter(ip, 'volcorrect', volcorrect_, validBoolean);
+addParameter(ip, 'exclseed_costfun', exclseed_costfun_, validBoolean);
+addParameter(ip, 'excltpts_costfun', excltpts_costfun_);
 addParameter(ip, 'normtype', normtype_, validChar);
 addParameter(ip, 'w_dir', w_dir_, validBoolean);
 addParameter(ip, 'param_init', param_init_, validParam);
@@ -110,7 +114,8 @@ if ~logical(ipR.bootstrapping)
     ub = [ipR.ub,zeros(1,3)]; % dummy values for a, b, and p
     
     objfun_handle = @(param) objfun_eNDM_general_dir_costopts(param,...
-        seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,ipR.costfun);
+        seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,...
+        ipR.costfun,ipR.excltpts_costfun,ipR.exclseed_costfun);
     if logical(ipR.fmindisplay)
         options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
             'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
@@ -146,6 +151,8 @@ if ~logical(ipR.bootstrapping)
     outputs.ndm.Full.init.volcorrect = ipR.volcorrect;
     outputs.ndm.Full.init.normtype = ipR.normtype;
     outputs.ndm.Full.init.costfun = ipR.costfun;
+    outputs.ndm.Full.init.exclseed_costfun = ipR.exclseed_costfun;
+    outputs.ndm.Full.init.excltpts_costfun = ipR.excltpts_costfun;
     outputs.ndm.Full.init.w_dir = ipR.w_dir;
     outputs.ndm.Full.init.param_init = ipR.param_init;
     outputs.ndm.Full.init.ub = ipR.ub;
@@ -260,7 +267,8 @@ else
         ub = [ipR.ub,zeros(1,3)]; % dummy values for a, b, and p
         
         objfun_handle = @(param) objfun_eNDM_general_dir_costopts(param,...
-            seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,ipR.costfun);
+            seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,...
+            ipR.costfun,ipR.excltpts_costfun,ipR.exclseed_costfun);
         if logical(ipR.fmindisplay)
             options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
                 'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
@@ -311,6 +319,8 @@ else
         outputs.ndm.(fldname).init.volcorrect = ipR.volcorrect;
         outputs.ndm.(fldname).init.normtype = ipR.normtype;
         outputs.ndm.(fldname).init.costfun = ipR.costfun;
+        outputs.ndm.(fldname).init.exclseed_costfun = ipR.exclseed_costfun;
+        outputs.ndm.(fldname).init.excltpts_costfun = ipR.excltpts_costfun;
         outputs.ndm.(fldname).init.w_dir = ipR.w_dir;
         outputs.ndm.(fldname).init.param_init = ipR.param_init;
         outputs.ndm.(fldname).init.ub = ipR.ub;
@@ -402,7 +412,8 @@ else
     outputs.ndm.Full.predicted = yopt;
     outputs.ndm.Full.param_fit = param_opt;
     outputs.ndm.Full.fval = objfun_eNDM_general_dir_costopts(param_opt,...
-        seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,ipR.costfun);
+        seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,...
+        ipR.costfun,ipR.excltpts_costfun,ipR.exclseed_costfun);
     outputs.ndm.Full.init = outputs.ndm.(fldnames{1}).init;
     outputs.ndm.Full.fmincon = [];
     Rvalues = zeros(1,length(time_stamps));

@@ -7,7 +7,8 @@
 % param((n_types+4):(2*n_types+3)) = b
 % param((2*n_types+4):(3*n_types+3)) = p
 
-function [f,newxt,newpath] = objfun_eNDM_general_dir_costopts(param,seed_location,pathology,ts,C_,U_,solvetype_,volcorrect_,costfun_)
+function [f,newxt,newpath] = objfun_eNDM_general_dir_costopts(param,seed_location,...
+    pathology,ts,C_,U_,solvetype_,volcorrect_,costfun_,excltpts_costfun_,exclseed_costfun_)
 
 LinRcalc = @(x,y) 2*corr(x,y)*std(x)*std(y)/(std(x)^2 + std(y)^2 + (mean(x) - mean(y))^2);
 n_types = size(U_,2);
@@ -21,9 +22,17 @@ p_ = param((2*n_types+5):(3*n_types+4));
 
 % Calculate predictions y with eNDM     
     % Solve eNDM; 
+    ts(excltpts_costfun_) = [];
+    pathology(:,excltpts_costfun_) = [];
     [y] = eNDM_general_dir(x0_,ts,C_,U_,alpha_,beta_,s_,a_,b_,p_,solvetype_,volcorrect_);
 
-% Modify quadratic error objfun to accomodate NaN    
+% Modify quadratic error objfun to accomodate NaN
+if logical(exclseed_costfun_)
+    seedbin = logical(seed_location);
+    y(seedbin,:) = [];
+    pathology(seedbin,:) = [];
+end
+
 if strcmp(costfun_,'sse_sum')
     f = nansum(nansum((y - pathology).^2));
 elseif strcmp(costfun_,'rval_sum')
