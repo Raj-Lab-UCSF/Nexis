@@ -98,7 +98,6 @@ if ~logical(ipR.bootstrapping)
     pathology = normalizer(data426.(ipR.study),ipR.normtype);
     seed_location = seed426.(ipR.study);
     U = zeros(size(C,1),1);
-    morder = 1+length(ipR.param_init);
     if isnan(ipR.param_init(1))
         ipR.param_init(1) = nansum(pathology(:,1))/nnz(seed_location); % heuristic default, study-dependent
     end
@@ -107,8 +106,14 @@ if ~logical(ipR.bootstrapping)
         ipR.param_init(4) = 0.5;
         ipR.ub(4) = 0.5;
         ipR.lb(4) = 0.5;
-        morder = morder - 1;
     end
+    mordervec = zeros(1,length(ipR.param_init));
+    for m = 1:length(ipR.param_init)
+        inclparam = (ipR.lb(m) ~= ipR.ub(m));
+        mordervec(m) = inclparam;
+    end
+    morder = 1 + sum(mordervec);
+    
     param_init = [ipR.param_init,zeros(1,3)]; % dummy values for a, b, and p
     lb = [ipR.lb,zeros(1,3)]; % dummy values for a, b, and p
     ub = [ipR.ub,zeros(1,3)]; % dummy values for a, b, and p
@@ -244,7 +249,6 @@ else
         pathology = data426.(ipR.study);    
         seed_location = seed426.(ipR.study);
         U = zeros(size(C,1),1);
-        morder = 1+length(ipR.param_init);
         fprintf('NDM Bootstrapping Iteration %d/%d\n',i,ipR.niters);
         notnaninds = find(~isnan(pathology(:,1)));
         settonansize = round((1-ipR.resample_rate)*length(notnaninds));
@@ -260,8 +264,13 @@ else
             ipR.param_init(4) = 0.5;
             ipR.ub(4) = 0.5;
             ipR.lb(4) = 0.5;
-            morder = morder - 1;
         end
+        mordervec = zeros(1,length(ipR.param_init));
+        for m = 1:length(ipR.param_init)
+            inclparam = (ipR.lb(m) ~= ipR.ub(m));
+            mordervec(m) = inclparam;
+        end
+        morder = 1 + sum(mordervec);
         param_init = [ipR.param_init,zeros(1,3)]; % dummy values for a, b, and p
         lb = [ipR.lb,zeros(1,3)]; % dummy values for a, b, and p
         ub = [ipR.ub,zeros(1,3)]; % dummy values for a, b, and p

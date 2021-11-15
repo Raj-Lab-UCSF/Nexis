@@ -18,11 +18,9 @@
 % 
 % homeo = [2344, 801, 1162, 2305, 1540, 3062, 3240, 1717];
 rng(2);
-outputs3 = stdNDM_mouse('study','DS9','bootstrapping',1,'niters',3,'w_dir',0,...
-    'exclseed_costfun',1);
-outputs4 = eNDM_mouse('outputs_ndm',outputs3,'study','DS9','bootstrapping',1,'niters',3,'w_dir',0,...
-    'bootstrapping_endm',1,'niters_endm',3,'datalist_endm',{'Trem2'},...
-    'exclseed_costfun',1);
+% outputs3 = stdNDM_mouse('study','DS9','bootstrapping',1,'niters',3,'w_dir',0);
+outputs4 = eNDM_mouse('study','DS9','bootstrapping',1,'niters',3,'w_dir',0,...
+    'bootstrapping_endm',1,'niters_endm',3,'datalist_endm',{'Trem2'});
 x = Output2Table(outputs4); 
 
 % 

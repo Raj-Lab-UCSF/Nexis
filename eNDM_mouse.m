@@ -173,7 +173,6 @@ if ~logical(ipR.bootstrapping_endm)
     pathology = normalizer(data426.(ipR.study),ipR.normtype);
     seed_location = seed426.(ipR.study);
     n_types = size(U,2);
-    morder = 1 + length(ipR.param_init) + 2*n_types;
     ndmflds = fieldnames(outputs.ndm);
     if length(ndmflds) == 1
         param_inits = outputs.ndm.Full.param_fit; 
@@ -204,8 +203,15 @@ if ~logical(ipR.bootstrapping_endm)
         param_init(4) = 0.5;
         ub(4) = 0.5;
         lb(4) = 0.5;
-        morder = morder - 1;
     end
+    
+    mordervec = zeros(1,length(ipR.param_init));
+    for m = 1:length(param_init)
+        inclparam = (lb(m) ~= ub(m));
+        mordervec(m) = inclparam;
+    end
+    morder = 1 + sum(mordervec) + 2*n_types;
+    
     param_init = [param_init(1:4),zeros(1,n_types),zeros(1,n_types),zeros(1,n_types)];
     lb = [lb(1:4),zeros(1,n_types),-Inf(1,n_types),-Inf(1,n_types)];
     ub = [ub(1:4),zeros(1,n_types),Inf(1,n_types),Inf(1,n_types)];
@@ -342,7 +348,6 @@ else
         pathology = data426.(ipR.study);
         seed_location = seed426.(ipR.study);
         n_types = size(U,2);
-        morder = 1 + length(ipR.param_init) + 2*n_types;
 
         notnaninds = find(~isnan(pathology(:,1)));
         settonansize = round((1-ipR.resample_rate)*length(notnaninds));
@@ -380,8 +385,15 @@ else
             param_init(4) = 0.5;
             ub(4) = 0.5;
             lb(4) = 0.5;
-            morder = morder - 1;
         end
+        
+        mordervec = zeros(1,length(ipR.param_init));
+        for m = 1:length(param_init)
+            inclparam = (lb(m) ~= ub(m));
+            mordervec(m) = inclparam;
+        end
+        morder = 1 + sum(mordervec) + 2*n_types;
+        
         param_init = [param_init(1:4),zeros(1,n_types),zeros(1,n_types),zeros(1,n_types)];
         lb = [lb(1:4),zeros(1,n_types),-Inf(1,n_types),-Inf(1,n_types)];
         ub = [ub(1:4),zeros(1,n_types),Inf(1,n_types),Inf(1,n_types)];
