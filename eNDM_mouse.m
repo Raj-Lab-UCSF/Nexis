@@ -145,11 +145,11 @@ if strcmp(ipR.datatype_endm,'gene')
     load([cd filesep 'raw_data_mouse' filesep 'Regional_Gene_Data.mat'],'regvgene_mean');
     U = regvgene_mean(:,ind_endm);
 elseif strcmp(ipR.datatype_endm,'ct_tasic')
-    load([cd filesep 'raw_data_mouse' filesep 'Tasic_CTMaps.mat'],'celltypedata');
-    U = celltypedata.densities(:,ind_endm);
+    load([cd filesep 'raw_data_mouse' filesep 'Tasic_CTMaps.mat'],'Tasic_ng606');
+    U = Tasic_ng606(:,ind_endm);
 elseif strcmp(ipR.datatype_endm,'ct_zeisel')
-    load([cd filesep 'raw_data_mouse' filesep 'Zeisel_CTMaps.mat'],'celltypedata');
-    U = celltypedata.densities(:,ind_endm);
+    load([cd filesep 'raw_data_mouse' filesep 'Zeisel_CTMaps.mat'],'Zeisel_ng1360');
+    U = Zeisel_ng1360(:,ind_endm);
 end
 
 U = U ./ nanmean(U);

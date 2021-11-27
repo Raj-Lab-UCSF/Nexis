@@ -29,8 +29,8 @@ p_ = param((2*n_types+5):(3*n_types+4));
 % Modify quadratic error objfun to accomodate NaN
 if logical(exclseed_costfun_)
     seedbin = logical(seed_location);
-    y(seedbin,:) = [];
-    pathology(seedbin,:) = [];
+    y(seedbin,:) = NaN;
+    pathology(seedbin,:) = NaN;
 end
 
 if strcmp(costfun_,'sse_sum')
@@ -69,6 +69,10 @@ elseif strcmp(costfun_,'LinR_end')
     end
     f = 1 - Rvalues(end);
 end
+% fprintf('f = %d\n',f)
+% display(seed_location.');
+% display(y);
+% display(pathology);
 
 end
 

@@ -2,8 +2,7 @@
 rng(2);
 % outputs3 = stdNDM_mouse('study','DS9','bootstrapping',1,'niters',3,'w_dir',0);
 outputs4 = eNDM_mouse('study','asyn_mouse','bootstrapping',1,'niters',3,'w_dir',0,...
-    'bootstrapping_endm',1,'niters_endm',3,'volcorrect',1,'datatype_endm','ct_zeisel',...
-    'datalist_endm',{'MBDOP2'});
+    'bootstrapping_endm',1,'niters_endm',3,'volcorrect',1,);
 x = Output2Table(outputs4);
 outputs6 = eNDM_mouse('outputs_ndm',outputs4,'study','IbaHippInj','bootstrapping_endm',...
     0,'niters_endm',1,'w_dir',0,'exclseed_costfun',1);
