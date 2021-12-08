@@ -1,12 +1,12 @@
 % homeo = [2344, 801, 1162, 2305, 1540, 3062, 3240, 1717];
 rng(2);
-% outputs3 = stdNDM_mouse('study','DS9','bootstrapping',1,'niters',3,'w_dir',0);
-outputs4 = eNDM_mouse('study','asyn_mouse','bootstrapping',1,'niters',3,'w_dir',0,...
-    'bootstrapping_endm',1,'niters_endm',3,'volcorrect',1,);
+outputs3 = stdNDM_mouse('study','IbaHippInj','bootstrapping',0,'niters',5,'w_dir',0);
+outputs4 = eNDM_mouse('outputs_ndm',outputs3,'study','IbaHippInj','w_dir',0,...
+    'bootstrapping_endm',0,'niters_endm',5,'volcorrect',1);
 x = Output2Table(outputs4);
-outputs6 = eNDM_mouse('outputs_ndm',outputs4,'study','IbaHippInj','bootstrapping_endm',...
-    0,'niters_endm',1,'w_dir',0,'exclseed_costfun',1);
-z = Output2Table(outputs6); 
+% outputs6 = eNDM_mouse('outputs_ndm',outputs4,'study','IbaHippInj','bootstrapping_endm',...
+%     0,'niters_endm',1,'w_dir',0,'exclseed_costfun',1);
+% z = Output2Table(outputs6); 
 % studies = {'asyn_mouse','asyn_human'};
 % genesets = {{'Trem2'},{'P2ry12','Cx3cr1','Fcrls','Olfml3','Hexb','Siglech','Sox5','Jun'},...
 %     {'P2ry12','Cx3cr1','Fcrls','Olfml3','Hexb','Siglech','Sox5','Jun','Trem2'}};
@@ -42,7 +42,7 @@ z = Output2Table(outputs6);
 %     'verbose_endm',0,'fmindisplay_endm',0,'datalist_endm',randperm(3855,3),'datapca_endm',1);
 % Output2Table(outputs3);
 % BootstrappingPlotter(outputs3);
-% CorrelationPlotter(outputs3);
+CorrelationPlotter(outputs4);
 
 % For Sam - This is a test for the alpha synuclein data, running a PCA on
 % the homeostatic markers of microglia and using the first component as a
