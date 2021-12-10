@@ -77,7 +77,7 @@ for k = 1:length(fldnames)
         set(gca, 'FontSize', 30, 'LineWidth', 0.75);
         if savenclose
             if strcmp('ndm',fldnames{k})
-                print(['Nexis_global_' tempstruct.Full.init.study '_scatterplot'],'-dtiffn');
+                print(['Nexis_global_' tempstruct.Full.init.study '_parameterplot'],'-dtiffn');
             else
                 namelist = outputs.endm.Full.init.datalist_endm;
                 if isnumeric(namelist)
@@ -86,10 +86,10 @@ for k = 1:length(fldnames)
                 end
                 if ~tempstruct.Full.init.datapca_endm
                     print(['Nexis_sv_' tempstruct.Full.init.study ...
-                        '_' namelist{1} '_scatterplot'],'-dtiffn');
+                        '_' namelist{1} '_parameterplot'],'-dtiffn');
                 else
                     print(['Nexis_sv_' tempstruct.Full.init.study ...
-                        '_' namelist{1} '_PC1_scatterplot'],'-dtiffn');
+                        '_' namelist{1} '_PC1_parameterplot'],'-dtiffn');
                 end
             end
             close;
