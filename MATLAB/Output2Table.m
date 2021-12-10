@@ -5,10 +5,16 @@ if nargin < 4
     filepath = cd;
     if nargin < 3
         datestr = date;
-        if ismember('ndm',fldnames)
-            filename = ['summary_eNDM_mouse_' outputs.ndm.Full.init.study '_' datestr];             
-        elseif ismember('endm',fldnames)
-            filename = ['summary_eNDM_mouse_' outputs.endm.Full.init.study '_' datestr];  
+        if ~ismember('endm',fldnames)
+            filename = ['summary_Nexis_mouse_' outputs.ndm.Full.init.study...
+                '_global_' datestr];             
+        else
+            typename = outputs.endm.Full.init.datalist_endm(1);
+            if isnumeric(typename)
+                typename = IndexName(typename,outputs.endm.Full.init.datatype_endm);
+            end
+            filename = ['summary_Nexis_mouse_' outputs.endm.Full.init.study...
+                '_' typename{1} '_' datestr];  
         end
         if nargin < 2
             writeout = 0;
@@ -66,6 +72,7 @@ ts = outputs.(fldnames{1}).Full.time_stamps;
 for i = 1:length(ts)
     columnnames{end+1} = sprintf('R, t = %d',ts(i)); vartypes{end+1} = 'double';
 end
+columnnames{end+1} = 'Linear Model: Log-Likelihood'; vartypes{end+1} = 'double';
 columnnames{end+1} = 'Linear Model: AIC'; vartypes{end+1} = 'double';
 columnnames{end+1} = 'Linear Model: BIC'; vartypes{end+1} = 'double';
 columnnames{end+1} = 'Linear Model: Intercept'; vartypes{end+1} = 'double';
@@ -168,11 +175,16 @@ for k = 1:length(rownames)
     for i = 1:length(ts)
         summarytable{k,index} = outputs.(fldnames{k}).Full.results.Corrs(i); index = index + 1;       
     end
+    summarytable{k,index} = outputs.(fldnames{k}).Full.results.lm_LogL; index = index + 1; 
     summarytable{k,index} = outputs.(fldnames{k}).Full.results.lm_AIC; index = index + 1;  
     summarytable{k,index} = outputs.(fldnames{k}).Full.results.lm_BIC; index = index + 1;
     summarytable{k,index} = outputs.(fldnames{k}).Full.results.lm_intercept; index = index + 1;    
     summarytable{k,index} = outputs.(fldnames{k}).Full.results.lm_Rsquared_ord; index = index + 1; 
     summarytable{k,index} = outputs.(fldnames{k}).Full.results.lm_Rsquared_adj;
+end
+
+if logical(writeout)
+    writetable(summarytable,[filepath filesep filename '.csv'],'WriteRowNames',true)
 end
 
     function names = IndexName(indices,dattypeendm)
@@ -189,8 +201,4 @@ end
         
         names = namescell(indices);
     end
-
-if logical(writeout)
-    writetable(summarytable,[filepath filesep filename '.csv'],'WriteRowNames',true)
-end
 end

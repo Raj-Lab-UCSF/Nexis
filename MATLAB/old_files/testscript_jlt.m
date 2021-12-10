@@ -1,9 +1,20 @@
 % homeo = [2344, 801, 1162, 2305, 1540, 3062, 3240, 1717];
 rng(2);
-outputs3 = stdNDM_mouse('study','IbaHippInj','bootstrapping',0,'niters',5,'w_dir',0);
-outputs4 = eNDM_mouse('outputs_ndm',outputs3,'study','IbaHippInj','w_dir',0,...
-    'bootstrapping_endm',0,'niters_endm',5,'volcorrect',1);
-x = Output2Table(outputs4);
+studylist = {'asyn_mouse', 'asyn_human'};
+types = {'MBDOP1','MBDOP2'};
+for i = 1:length(studylist)
+    outputs_ndm = stdNDM_mouse('study',studylist{i},'bootstrapping',1,'niters',3,...
+        'w_dir',0,'volcorrect',1);
+    for j = 1:length(types)
+        outputs_endm = eNDM_mouse('outputs_ndm',outputs_ndm,'study',studylist{i},...
+            'w_dir',0,'bootstrapping_endm',1,'niters_endm',3,'volcorrect',1,...
+            'bounds_type_endm','CI_95','datatype_endm','ct_zeisel',...
+            'datalist_endm',types(j));
+        x = Output2Table(outputs_endm,1);
+        CorrelationPlotter(outputs_endm,1);
+        BootstrappingPlotter(outputs_endm,1);
+    end
+end
 % outputs6 = eNDM_mouse('outputs_ndm',outputs4,'study','IbaHippInj','bootstrapping_endm',...
 %     0,'niters_endm',1,'w_dir',0,'exclseed_costfun',1);
 % z = Output2Table(outputs6); 
@@ -42,7 +53,7 @@ x = Output2Table(outputs4);
 %     'verbose_endm',0,'fmindisplay_endm',0,'datalist_endm',randperm(3855,3),'datapca_endm',1);
 % Output2Table(outputs3);
 % BootstrappingPlotter(outputs3);
-CorrelationPlotter(outputs4);
+CorrelationPlotter(outputs_endm);
 
 % For Sam - This is a test for the alpha synuclein data, running a PCA on
 % the homeostatic markers of microglia and using the first component as a

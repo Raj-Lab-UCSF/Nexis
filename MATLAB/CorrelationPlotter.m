@@ -1,5 +1,8 @@
-function CorrelationPlotter(outputs)
+function CorrelationPlotter(outputs,savenclose)
 
+if nargin < 2
+    savenclose = 0;
+end
 fldnames = fieldnames(outputs);
 
 % Rvals across time points for optimal model
@@ -15,8 +18,10 @@ for k = 1:length(fldnames)
     num_plots = size(data,2);
     figure('Name',[tempstruct.Full.init.study '_' fldnames{k}],'Units','inch','Position',[0 0 20 7]);
     if strcmp('ndm',fldnames{k})
-        sgtitle(['NDM - Study: ' tempstruct.Full.init.study],'FontName','Times','FontSize',32,'FontWeight','bold');
+        flnamestr = 'Nexis_global';
+        sgtitle(['Nexis:global - Study: ' tempstruct.Full.init.study],'FontName','Times','FontSize',32,'FontWeight','bold');
     else
+        flnamestr = 'Nexis_sv';
         datsettype = tempstruct.Full.init.datatype_endm;
         namelist = tempstruct.Full.init.datalist_endm;
         if isnumeric(namelist)
@@ -44,7 +49,7 @@ for k = 1:length(fldnames)
         if logical(tempstruct.Full.init.datapca_endm)
             namestr = [namestr ' (1st PC)'];
         end
-        sgtitle(['eNDM - Study: ' tempstruct.Full.init.study ', ' namestr],'FontName','Times','FontSize',32,'FontWeight','bold');
+        sgtitle(['Nexis:sv - Study: ' tempstruct.Full.init.study ', ' namestr],'FontName','Times','FontSize',32,'FontWeight','bold');
     end
     for j = 1:num_plots
         subplot(1,num_plots,j)
@@ -58,6 +63,20 @@ for k = 1:length(fldnames)
         set(gca,'FontSize',18,'FontName','Times')
         title(['Time = ' num2str(tempstruct.Full.time_stamps(j))]);
     end  
+    if savenclose
+        if strcmp('ndm',fldnames{k})
+            print([flnamestr '_' tempstruct.Full.init.study '_scatterplot'],'-dtiffn');
+        else
+            if ~tempstruct.Full.init.datapca_endm
+                print([flnamestr '_' tempstruct.Full.init.study ...
+                    '_' namelist{1} '_scatterplot'],'-dtiffn');
+            else
+                print([flnamestr '_' tempstruct.Full.init.study ...
+                    '_' namelist{1} '_PC1_scatterplot'],'-dtiffn');
+            end
+        end
+        close;
+    end
     clear tempstruct
 end
 
@@ -108,9 +127,9 @@ if logical(outputs.ndm.Full.init.bootstrapping) || logical(outputs.endm.Full.ini
         if logical(outputs.endm.Full.init.datapca_endm)
             namestr = [namestr ' (1st PC)'];
         end
-        xlabs = {'NDM',['\begin{tabular}{c} eNDM \\' namestr '\end{tabular}']};
+        xlabs = {'Nexis:global',['\begin{tabular}{c} Nexis:sv \\' namestr '\end{tabular}']};
     else
-        xlabs = {'NDM','eNDM'};
+        xlabs = {'Nexis:global','Nexis:sv'};
     end
     cmap = [[1 0 0]; [0 0 1]];
     xlabinds = 1:length(xlabs);
@@ -167,6 +186,16 @@ if logical(outputs.ndm.Full.init.bootstrapping) || logical(outputs.endm.Full.ini
     set(gca,'TickLength',[0 0])
     title(sprintf('Bootstrapped Performance for Study %s',outputs.ndm.Full.init.study),'FontName','Times');
     set(gca, 'FontSize', 24, 'LineWidth', 0.75,'FontName','Times');
+    if savenclose
+        if ~outputs.endm.Full.init.datapca_endm
+            print(['Nexis_' outputs.endm.Full.init.study ...
+                '_' namelist{1} '_bootstrappedR2'],'-dtiffn');
+        else
+            print(['Nexis_' outputs.endm.Full.init.study ...
+                '_' namelist{1} '_PC1_bootstrappedR2'],'-dtiffn');
+        end
+        close;
+    end
 end
 
     function names = IndexName(indices,dattypeendm)
@@ -183,7 +212,5 @@ end
         
         names = namescell(indices);
     end
-
-
 
 end

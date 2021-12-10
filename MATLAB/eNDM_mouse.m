@@ -291,6 +291,7 @@ if ~logical(ipR.bootstrapping_endm)
     numObs1 = length(P(~isnan(P)));
     lm_endm = fitlm(Y, P);
     logL = lm_endm.LogLikelihood;
+    outputs.endm.Full.results.lm_LogL = logL;
     outputs.endm.Full.results.lm_AIC = -2*logL + 2*morder;
     outputs.endm.Full.results.lm_BIC = -2*logL + log(numObs1)*morder;
     outputs.endm.Full.results.lm_intercept = lm_endm.Coefficients.Estimate(1);
@@ -490,6 +491,7 @@ else
         numObs1 = length(P(~isnan(P)));
         lm_endm = fitlm(Y, P);
         logL = lm_endm.LogLikelihood;
+        outputs.endm.(fldname).results.lm_LogL = logL;
         outputs.endm.(fldname).results.lm_AIC = -2*logL + 2*morder;
         outputs.endm.(fldname).results.lm_BIC = -2*logL + log(numObs1)*morder;
         outputs.endm.(fldname).results.lm_intercept = lm_endm.Coefficients.Estimate(1);
@@ -578,6 +580,7 @@ else
     numObs1 = length(P(~isnan(P)));
     lm_endm = fitlm(Y, P);
     logL = lm_endm.LogLikelihood;
+    outputs.endm.Full.results.lm_LogL = logL;
     outputs.endm.Full.results.lm_AIC = -2*logL + 2*morder;
     outputs.endm.Full.results.lm_BIC = -2*logL + log(numObs1)*morder;
     outputs.endm.Full.results.lm_intercept = lm_endm.Coefficients.Estimate(1);

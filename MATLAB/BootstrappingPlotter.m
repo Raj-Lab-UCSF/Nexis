@@ -1,4 +1,8 @@
-function BootstrappingPlotter(outputs)
+function BootstrappingPlotter(outputs,savenclose)
+
+if nargin < 2
+    savenclose = 0;
+end
 
 fldnames = fieldnames(outputs);
 for k = 1:length(fldnames)
@@ -62,15 +66,50 @@ for k = 1:length(fldnames)
         xlabel('');
         set(gca,'TickLength',[0 0])
         if strcmp(fldnames{k},'endm')
-            title({sprintf('eNDM Bootstrapping for Study %s:\nn = %d, resample rate = %.1f',...
+            title({sprintf('Nexis:sv Bootstrapping for Study %s:\nn = %d, resample rate = %.1f',...
                 tempstruct.Full.init.study,niters,...
                 tempstruct.Full.init.resample_rate_endm)},'FontName','Times');
         elseif strcmp(fldnames{k},'ndm')
-            title({sprintf('NDM Bootstrapping for Study %s:\nn = %d, resample rate = %.1f',...
+            title({sprintf('Nexis:global Bootstrapping for Study %s:\nn = %d, resample rate = %.1f',...
                 tempstruct.Full.init.study,niters,...
                 tempstruct.Full.init.resample_rate)},'FontName','Times');
         end
         set(gca, 'FontSize', 30, 'LineWidth', 0.75);
+        if savenclose
+            if strcmp('ndm',fldnames{k})
+                print(['Nexis_global_' tempstruct.Full.init.study '_scatterplot'],'-dtiffn');
+            else
+                namelist = outputs.endm.Full.init.datalist_endm;
+                if isnumeric(namelist)
+                    namelist = IndexName(namelist,...
+                        outputs.endm.Full.init.datatype_endm);
+                end
+                if ~tempstruct.Full.init.datapca_endm
+                    print(['Nexis_sv_' tempstruct.Full.init.study ...
+                        '_' namelist{1} '_scatterplot'],'-dtiffn');
+                else
+                    print(['Nexis_sv_' tempstruct.Full.init.study ...
+                        '_' namelist{1} '_PC1_scatterplot'],'-dtiffn');
+                end
+            end
+            close;
+        end
     end
 end
+
+    function names = IndexName(indices,dattypeendm)
+        if strcmp(dattypeendm,'gene')
+            load([cd filesep 'raw_data_mouse' filesep 'gene_names_trans.mat'],'gene_names_trans');
+            namescell = gene_names_trans;
+        elseif strcmp(dattypeendm,'ct_tasic')
+            load([cd filesep 'raw_data_mouse' filesep 'classkey_tasic.mat'],'classkey_tasic');
+            namescell = classkey_tasic;
+        elseif strcmp(dattypeendm,'ct_zeisel')
+            load([cd filesep 'raw_data_mouse' filesep 'classkey_zeisel.mat'],'classkey_zeisel');
+            namescell = classkey_zeisel;
+        end
+        
+        names = namescell(indices);
+    end
+
 end
