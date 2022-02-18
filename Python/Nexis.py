@@ -1,4 +1,6 @@
 import numpy as np
+import scipy as sp
+import pandas as pd
 
 class Nexis:
     def __init__(self,C,U,seed_vec,t_vec,volcorrect=0,w_dir=0):
@@ -9,17 +11,33 @@ class Nexis:
         self.volcorrect = volcorrect # Binary flag indicating whether to use volume correction
         self.w_dir = w_dir # Binary flag indicating whether to use directionality or not 
     
-    def simulate(self, parameters):
+    def simulate_nexis(self, parameters):
+        """
+        Returns a matrix, Y, that is nROI x nt representing the modeled Nexis pathology
+        given the provided parameters. alpha, beta, and gamma should be nonnegative scalars;
+        s should be bounded between 0 and 1; b and p should be nCT-long vectors
+        """
         # Define parameters
-        ntypes = np.size(self.U,1)
+        ntypes = np.size(self.U,axis=1)
         alpha = parameters[0]
         beta = parameters[1]
         gamma = parameters[2]
         s = parameters[3]
-        b = parameters[4:(ntypes+4)]
-        p = parameters[(ntypes+4):]
+        b = np.transpose(parameters[4:(ntypes+4)])
+        p = np.transpose(parameters[(ntypes+4):])
+        
+        # Define starting pathology x0
+        x0 = gamma * self.seed_vec
 
         # Define diagonal matrix Gamma containing spread-independent terms
+        s_p = np.dot(self.U,p)
+        Gamma = np.diag(s_p)
+
+        # Define Laplacian matrix L
+        C_dir = (1-s) * np.transpose(self.C) + s * self.C
+        coldegree = np.sum(C_dir,axis=0)
+        L_raw = np.diag(coldegree) - C_dir
+        s_b = np.dot(self.U,b)
         
 
 
