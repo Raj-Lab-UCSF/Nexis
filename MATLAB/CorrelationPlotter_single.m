@@ -56,12 +56,12 @@ else
     sgtitle({['Nexis:sv - Study: ' study ', '], namestr},'FontName','Times',...
         'FontSize',32,'FontWeight','bold');
 end
-% ha = tight_subplot(1,num_plots,0.025);
+
 for j = 1:num_plots
     subplot(1,num_plots,j);
-%     axes(ha(j));
     scatter(data(:,j),predicted(:,j),30,'o','MarkerFaceColor','k',...
         'MarkerEdgeColor','k')
+    box on;
     axis([0 plot_max_data 0 plot_max_pred])
     h1 = lsline;
     h1.Color = 'r'; h1.LineWidth = 3;
@@ -73,11 +73,9 @@ for j = 1:num_plots
     ytickformat('%,.1f');
     if j == 1
         ylabel('Modeled Pathology');
-        yticks([0,plot_max_pred/2,plot_max_pred]);
     else
-        yticks([]);
+        yticklabels({});
     end
-    ytickformat('%,.1f');
     set(gca,'FontSize',20,'FontName','Times')
     title(['Time = ' num2str(tpts(j))]);
     axis('square')
