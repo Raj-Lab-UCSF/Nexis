@@ -21,7 +21,7 @@
 % Output:
 % y  =   eNDM predicted vectors (columns) at each time stamp
 
-function [y] = eNDM_general_dir(x0,time_stamps,C,U,alpha,beta,s,a,b,p,solvetype,volcorrect)
+function [y,A] = eNDM_general_dir(x0,time_stamps,C,U,alpha,beta,s,a,b,p,solvetype,volcorrect)
 if nargin < 12
     volcorrect = 0;
     if nargin < 11

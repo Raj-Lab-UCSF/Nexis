@@ -24,13 +24,13 @@ num_plots = size(data,2);
 if isempty(sv_types)
     flnamestr = 'Nexis_global';
     fig = figure('DefaultAxesPosition', [0.1, 0.1, 0.8, 0.8],...
-    'Units','inch','Position',[0 0 5*num_plots 4.25]);
+    'Units','inch','Position',[0 0 5*num_plots 4.85]);
     sgtitle(['Nexis:global - Study: ' study],'FontName','Times',...
         'FontSize',32,'FontWeight','bold');
 else
     flnamestr = 'Nexis_sv';
     fig = figure('DefaultAxesPosition', [0.1, 0.1, 0.8, 0.8],...
-    'Units','inch','Position',[0 0 5*num_plots 4.75]);
+    'Units','inch','Position',[0 0 5*num_plots 5.45]);
     if strcmp(geneorct,'gene')
         if length(sv_types) > 1
             dattypestr = 'Genes: ';
