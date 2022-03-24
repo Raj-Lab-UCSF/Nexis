@@ -22,20 +22,21 @@ class run_Nexis:
     def __init__(self,C_,U_,seed_vec_,t_vec_,volcorrect_=0,w_dir_=0,datadir_=''):
         self.C = C_ # Connectivity matrix, nROI x nROI
         self.U = U_ # Matrix or vector of cell type or gene expression, nROI x nTypes
-        self.seed_vec_ = seed_vec_ # Binary vector indicated seed location, nROI x 1 
-        self.t_vec_ = t_vec_ # Vector of time points to output model predictions, 1 x nt
-        self.volcorrect_ = volcorrect_ # Binary flag indicating whether to use volume correction
-        self.w_dir_ = w_dir_ # Binary flag indicating whether to use directionality or not 
+        self.seed_vec = seed_vec_ # Binary vector indicated seed location, nROI x 1 
+        self.t_vec = t_vec_ # Vector of time points to output model predictions, 1 x nt
+        self.volcorrect = volcorrect_ # Binary flag indicating whether to use volume correction
+        self.w_dir = w_dir_ # Binary flag indicating whether to use directionality or not 
         if (datadir_==''):
             curdir = os.getcwd()
             subdir = 'raw_data_mouse'
             datadir_ = os.path.join(curdir,subdir)
         self.datadir = datadir_ # Directory to load dependences from
 
-    def forward_sim(A_,t_,x0_):
-        y_ = np.zeros(np.size(A_,0),len(t_))
-        for i in len(range(len(t_))):
-            y_[:,i] = expm(A_*t_[i]) * x0_
+    def forward_sim(self,A_,t_,x0_):
+        y_ = np.zeros([np.shape(A_)[0],len(t_)])
+        for i in list(range(len(t_))):
+            ti = t_[i]
+            y_[:,i] = np.dot(expm(A_*ti),np.squeeze(x0_))
         return y_
 
     def simulate_nexis(self, parameters):
@@ -50,7 +51,7 @@ class run_Nexis:
         beta = parameters[1] # global diffusivity rate 
         gamma = parameters[2] # seed rescale value
         s = parameters[3] # directionality (0 = anterograde, 1 = retrograde)
-        if self.w_dir_==0:
+        if self.w_dir==0:
             s = 0.5
         else:
             s = parameters[3] # directionality (0 = anterograde, 1 = retrograde)
@@ -59,7 +60,7 @@ class run_Nexis:
         
         # Define starting pathology x0
         x0 = gamma * self.seed_vec
-
+        
         # Define diagonal matrix Gamma containing spread-independent terms
         s_p = np.dot(self.U,p)
         Gamma = np.diag(s_p) + (alpha * np.eye(len(s_p)))
@@ -86,7 +87,7 @@ class run_Nexis:
         A = Gamma - (beta * L)
 
         # solve analytically
-        y = self.forward_sim(self.t_vec,x0)
+        y = self.forward_sim(A,self.t_vec,x0)
         return y
 
 
