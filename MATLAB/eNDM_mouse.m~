@@ -135,7 +135,7 @@ cmin = min(min(C));
 C = (C - cmin)./(cmax-cmin);
 
 % Define cell type matrix, U
-if ~isequal(ipR.datalist_endm,{'random'})
+if ~isequal(ipR.datalist_endm,{'random'}
     if ~isnumeric(ipR.datalist_endm)
         ind_endm = NameIndex(ipR.datalist_endm,ipR.datatype_endm);
     else
@@ -152,9 +152,6 @@ if ~isequal(ipR.datalist_endm,{'random'})
         load([cd filesep 'raw_data_mouse' filesep 'Zeisel_CTMaps.mat'],'Zeisel_ng1360');
         U = Zeisel_ng1360(:,ind_endm);
     end
-else
-    U = rand(size(C,1),1);
-end
 
 U = U ./ nanmean(U);
 if logical(ipR.datapca_endm) && (length(ipR.datalist_endm) > 1)
