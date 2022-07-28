@@ -34,9 +34,10 @@ validScalar = @(x) isnumeric(x) && isscalar(x) && (x>=0);
 % validNonnegative = @(x) isnumeric(x) && all(x(:) >= 0);
 validBoolean = @(x) isscalar(x) && (x==0 || x==1);
 validChar = @(x) ischar(x);
-validStudy = @(x) ismember(x,{'IbaHippInj','IbaStrInj','Clavaguera','Hurtado',...
-                                'BolundaDSAD','BolundaCBD','DS4','DS6','DS9',...
-                                'asyn_human','asyn_mouse'});
+% validStudy = @(x) ismember(x,{'IbaHippInj','IbaStrInj','Clavaguera','Hurtado',...
+%                                 'BolundaDSAD','BolundaCBD','DS4','DS6','DS9',...
+%                                 'asyn_human','asyn_mouse'});
+validStudy = @(x) ischar(x);
 validST = @(x) ismember(x,{'analytic','numeric'});
 validParam = @(x) (length(x) == 4);
 

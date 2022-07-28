@@ -21,7 +21,7 @@ s = 0.5;
 wdir = 0;
 color = [0 0 1];
 [y] = eNDM_general_dir(seed*gamma,ts,C,U_null,alpha,beta,s,0,b,p,'analytic',1);
-CorrelationPlotter_single(y,data,ts,'mouse',{},'cell',0,wdir,color,'o',1);
+CorrelationPlotter_single(y,data,ts,'mouse',{},'cell',0,wdir,color,'o',0);
 
 % Nexis:global, with directionality, mouse
 ts = tpts.mouse;
