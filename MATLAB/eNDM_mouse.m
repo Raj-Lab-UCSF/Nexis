@@ -48,15 +48,15 @@ validScalar = @(x) isnumeric(x) && isscalar(x) && (x>=0);
 % validNonnegative = @(x) isnumeric(x) && all(x(:) >= 0);
 validBoolean = @(x) isscalar(x) && (x==0 || x==1);
 validChar = @(x) ischar(x);
-validStudy = @(x) ismember(x,{'IbaHippInj','IbaStrInj','Clavaguera','Hurtado',...
-                                'BolundaDSAD','BolundaCBD','DS4','DS6','DS9',...
-                                'asyn_human','asyn_mouse'});
+% validStudy = @(x) ismember(x,{'IbaHippInj','IbaStrInj','Clavaguera','Hurtado',...
+%                                 'BolundaDSAD','BolundaCBD','DS4','DS6','DS9',...
+%                                 'DS9_110','DS6_110','asyn_human','asyn_mouse'});
 validST = @(x) ismember(x,{'analytic','numeric'});
 validBoundsType = @(x) strcmp(x,'old') || strcmp(x(1:2),'CI');
 validParam = @(x) (length(x) == 4);
 validDataTypeENDM = @(x) ismember(x,{'gene','ct_tasic','ct_zeisel'});
 
-addParameter(ip, 'study', study_, validStudy);
+addParameter(ip, 'study', study_, validChar);
 addParameter(ip, 'costfun', costfun_, validChar);
 addParameter(ip, 'solvetype', solvetype_, validST);
 addParameter(ip, 'volcorrect', volcorrect_, validBoolean);
