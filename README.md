@@ -1,5 +1,5 @@
 # Nexis
-Repository Owner: [Justin Torok](http://github.com/justin-torok (Email: justin.torok@ucsf.edu)
+Repository Owner: [Justin Torok](http://github.com/justin-torok) (Email: justin.torok@ucsf.edu)
 
 Project Lead: Chaitali Anand (Email: chaitali.anand@ucsf.edu)
 
