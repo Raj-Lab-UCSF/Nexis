@@ -1,9 +1,7 @@
 # Nexis
-Repository Owner: [Justin Torok](http://github.com/justin-torok)
-Email: justin.torok@ucsf.edu
+Repository Owner: [Justin Torok](http://github.com/justin-torok (Email: justin.torok@ucsf.edu)
 
-Project Lead: Chaitali Anand
-Email: chaitali.anand@ucsf.edu
+Project Lead: Chaitali Anand (Email: chaitali.anand@ucsf.edu)
 
 The following code was developed for running the Nexopathy in silico (NexIS) model described in Anand, *et al.*, 2022 (preprint [here](https://www.biorxiv.org/content/10.1101/2021.03.22.436470v1)), along with all of the auxilliary functions required for plotting the outputs as shown in the manuscript. 
 
