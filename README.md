@@ -14,10 +14,10 @@ All code is written in MATLAB and has been tested in versions 2020a and 2022a. H
 - Mouse mesoscale connectome, which was obtained from [Oh, *et al.*, 2014](https://www.nature.com/articles/nature13186). 
 
 ## 2. Files
-Below is a short description of each of the code files contained in the **Nexis** repository, grouped by general functionality. Scripts that are also functions have their inputs and outputs described, with required inputs in boldface text and optional inputs with their default setting in parentheses.
+Below is a short description of each of the code files contained in the **Nexis** repository, grouped by general functionality. Scripts that are also functions have their inputs and outputs described.
 
 ### Running the Model
-- `stdNDM_mouse.m`: The core function used to generate Nexis:global results (refer to [Anand, *et al.*, 2022](https://www.biorxiv.org/content/10.1101/2021.03.22.436470v1) for full model details). This function solves a parameter inference problem on [gamma, alpha, beta, s] and saves final model outputs for the optimized values of these parameters, with summary statistics, in a MATLAB struct object. All inputs are optional and specified as keyword arguments using `inputParser`. 
+- `stdNDM_mouse.m`: The core function used to generate NexIS:global results (refer to [Anand, *et al.*, 2022](https://www.biorxiv.org/content/10.1101/2021.03.22.436470v1) for full model details). This function solves a parameter inference problem on [gamma, alpha, beta, s] and saves final model outputs for the optimized values of these parameters, with summary statistics, in a MATLAB struct object. All inputs are optional and specified as keyword arguments using `inputParser`. 
     - ***Inputs***:
         - `study`: String indicating which dataset to use (default = 'IbaHippInj')
         - `costfun`: String indicating which cost function to use, which is passed to `objfun_eNDM_general_dir_costopts.m` (default = 'LinR')
