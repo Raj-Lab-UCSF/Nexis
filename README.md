@@ -1,9 +1,9 @@
 # Nexis
 Repository Owner: [Justin Torok](http://github.com/justin-torok) (Email: justin.torok@ucsf.edu)
 
-Project Lead: Chaitali Anand (Email: chaitali.anand@ucsf.edu)
+Project Lead: [Chaitali Anand](http://github.com/Chai1811) (Email: chaitali.anand@ucsf.edu)
 
-The following code was developed for running the Nexopathy in silico (NexIS) model described in Anand, *et al.*, 2022 (preprint [here](https://www.biorxiv.org/content/10.1101/2021.03.22.436470v1)), along with all of the auxilliary functions required for plotting the outputs as shown in the manuscript. 
+The following code was developed for running the Nexopathy in silico (NexIS) model described in Anand, *et al.*, 2022 (preprint [here](https://assets.researchsquare.com/files/rs-1189757/v1_covered.pdf?c=1640713622)), along with all of the auxilliary functions required for plotting the outputs as shown in the manuscript. 
 
 We note that the naming conventions of the models have changed, but these changes are not reflected in the code at this time. The NexIS:global and NexIS:microglia results described in the manuscript were run using the `stdNDM_mouse.m` and `eNDM_mouse.m` functions, respectively (these are described in more detail below). 
 
@@ -17,7 +17,7 @@ All code is written in MATLAB and has been tested in versions 2020a and 2022a. H
 Below is a short description of each of the code files contained in the **Nexis** repository, grouped by general functionality. Scripts that are also functions have their inputs and outputs described.
 
 ### Running the Model
-- `stdNDM_mouse.m`: The core function used to generate NexIS:global results (refer to [Anand, *et al.*, 2022](https://www.biorxiv.org/content/10.1101/2021.03.22.436470v1) for full model details). This function solves a parameter inference problem on [gamma, alpha, beta, s] and saves final model outputs for the optimized values of these parameters, with summary statistics, in a MATLAB struct object. All inputs are optional and specified as keyword arguments using `inputParser`. 
+- `stdNDM_mouse.m`: The core function used to generate NexIS:global results (refer to [Anand, *et al.*, 2022](https://assets.researchsquare.com/files/rs-1189757/v1_covered.pdf?c=1640713622) for full model details). This function solves a parameter inference problem on [gamma, alpha, beta, s] and saves final model outputs for the optimized values of these parameters, with summary statistics, in a MATLAB struct object. All inputs are optional and specified as keyword arguments using `inputParser`. 
     - ***Inputs***:
         - `study`: String indicating which dataset to use (default = 'IbaHippInj')
         - `costfun`: String indicating which cost function to use, which is passed to `objfun_eNDM_general_dir_costopts.m` (default = 'LinR')
@@ -43,7 +43,7 @@ Below is a short description of each of the code files contained in the **Nexis*
          - `flowthresh`: Percentile at which to threshold the calculated flows using `FlowCalculator.m` (default = 99.93)    
     - ***Outputs***:
         - `outputs`: A MATLAB struct containing inputs, outputs, and summary statistics of the final model. 
-- `eNDM_mouse.m`: The core function used to generate NexIS:Trem2 results, among others (refer to [Anand, *et al.*, 2022](https://www.biorxiv.org/content/10.1101/2021.03.22.436470v1) for full model details). This function solves a parameter inference problem on [gamma, alpha, beta, s] and saves final model outputs for the optimized values of these parameters, with summary statistics, in a MATLAB struct object. All inputs are optional and specified as keyword arguments using `inputParser`. This function uses a hierarchical parameter fitting approach, where requires a run of `stdNDM_mouse.m` is used to first fit the global parameters [gamma, alpha, beta, s] and then uses those outputs to define the initial values and bounds of these parameters to pass to `fmincon` when fitting for the new parameters [b, p]. For iterating over genes or cell types, we highly recommend running `stdNDM_mouse.m` first and then passing its output struct to `eNDM_mouse.m` to save computational time, but the function will call `stdNDM_mouse.m` internally if this struct is not provided.  
+- `eNDM_mouse.m`: The core function used to generate NexIS:Trem2 results, among others (refer to [Anand, *et al.*, 2022](https://assets.researchsquare.com/files/rs-1189757/v1_covered.pdf?c=1640713622) for full model details). This function solves a parameter inference problem on [gamma, alpha, beta, s] and saves final model outputs for the optimized values of these parameters, with summary statistics, in a MATLAB struct object. All inputs are optional and specified as keyword arguments using `inputParser`. This function uses a hierarchical parameter fitting approach, where requires a run of `stdNDM_mouse.m` is used to first fit the global parameters [gamma, alpha, beta, s] and then uses those outputs to define the initial values and bounds of these parameters to pass to `fmincon` when fitting for the new parameters [b, p]. For iterating over genes or cell types, we highly recommend running `stdNDM_mouse.m` first and then passing its output struct to `eNDM_mouse.m` to save computational time, but the function will call `stdNDM_mouse.m` internally if this struct is not provided.  
 
     - ***Inputs***:
         - `study`: String indicating which dataset to use (default = 'IbaHippInj')
@@ -81,7 +81,7 @@ Below is a short description of each of the code files contained in the **Nexis*
     - ***Outputs***:
         - `outputs`: A MATLAB struct containing inputs, outputs, and summary statistics of the final model. 
 
-- `FlowCalculator.m`: Function that calculates the flows on the connectome graph over time, which use a first-order approximation for the time derivatives (refer to [Anand, *et al.*, 2022](https://www.biorxiv.org/content/10.1101/2021.03.22.436470v1) for full details). **This function is called internally within `stdNDM_mouse.m` and `eNDM_mouse.m` and generally does not need to be called outside of these functions.** 
+- `FlowCalculator.m`: Function that calculates the flows on the connectome graph over time, which use a first-order approximation for the time derivatives (refer to [Anand, *et al.*, 2022](https://assets.researchsquare.com/files/rs-1189757/v1_covered.pdf?c=1640713622) for full details). **This function is called internally within `stdNDM_mouse.m` and `eNDM_mouse.m` and generally does not need to be called outside of these functions.** 
 
     - ***Inputs***:
         - `X_`: Inferred pathology values over time as a regions-by-time-points matrix.
