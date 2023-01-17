@@ -51,7 +51,9 @@ elseif strcmp(costfun_,'rval_end')
     f = 1 - Rvalues(end);
 elseif strcmp(costfun_,'LinR')
     Rvalues = zeros(1,length(ts));
-    naninds = isnan(pathology(:,1));
+%     naninds = isnan(pathology(:,1)); % Yuanxi's Comment: Our dataset has some missing data. It could occur at different MPI. 
+%                                                             % I recommend that here could be revised to 'naninds = isnan(sum(pathology,2));'
+    naninds = isnan(prod(pathology,2));
     newxt = y; newxt(naninds,:) = [];
     newpath = pathology; newpath(naninds,:) = [];
     for jj = 1:length(ts)
@@ -61,13 +63,39 @@ elseif strcmp(costfun_,'LinR')
 %     f = length(ts) - sum(Rvalues) + sum(abs(param))/length(param);
 elseif strcmp(costfun_,'LinR_end')
     Rvalues = zeros(1,length(ts));
-    naninds = isnan(pathology(:,1));
+    naninds = isnan(prod(pathology,2));
     newxt = y; newxt(naninds,:) = [];
     newpath = pathology; newpath(naninds,:) = [];
     for jj = 1:length(ts)
         Rvalues(jj) = LinRcalc(newxt(:,jj),newpath(:,jj));
     end
     f = 1 - Rvalues(end);
+elseif strcmp(costfun_,'log_rval_sum')
+    Rvalues = zeros(1,length(ts));
+    finiteinds = isfinite(sum(log(pathology),2));
+    newxt = y;
+    for jj = 1:length(ts)
+        Rvalues(jj) = corr(log(y(finiteinds,jj)),log(pathology(finiteinds,jj)), 'rows','complete');
+    end
+    f = length(ts) - sum(Rvalues);
+
+elseif strcmp(costfun_,'log_rval_end')
+    Rvalues = zeros(1,length(ts));
+    finiteinds = isfinite(sum(log(pathology),2));
+    newxt = y;
+    for jj = 1:length(ts)
+        Rvalues(jj) = corr(log(y(finiteinds,jj)),log(pathology(finiteinds,jj)), 'rows','complete');
+    end
+    f = 1 - Rvalues(end);
+
+elseif strcmp(costfun_,'log_LinR_sum')
+    Rvalues = zeros(1,length(ts));
+    finiteinds = isfinite(sum(log(pathology),2));
+    newxt = y;
+    for jj = 1:length(ts)
+        Rvalues(jj) = LinRcalc(log(y(finiteinds,jj)),log(pathology(finiteinds,jj)));
+    end
+    f = length(ts) - sum(Rvalues);
 end
 % fprintf('f = %d\n',f)
 % display(seed_location.');
