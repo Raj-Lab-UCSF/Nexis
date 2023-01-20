@@ -6,8 +6,8 @@ function outputs = stdNDM_mouse_PFFvsGCI_Yuanxi(varargin)
 % param(4) = s
 
 % Define defaults and set inputs
-study_ = 'PFFvsGCI'; 
-costfun_ = 'log_rval_sum';
+study_ = 'IbaHippInj'; 
+costfun_ = 'LinR';
 solvetype_ = 'analytic';
 volcorrect_ = 0;
 exclseed_costfun_ = 0;
@@ -15,7 +15,7 @@ excltpts_costfun_ = [];
 normtype_ = 'log';
 w_dir_ = 0; 
 param_init_ = [NaN,0,1,1];
-ub_ = [1,Inf,Inf,1];
+ub_ = [1,0,Inf,1];
 lb_ = zeros(1,4);
 lb_(2) = -Inf;
 
@@ -83,10 +83,10 @@ elseif strcmp(ipR.study(1:4),'asyn')
         'data426','seed426','tpts');
     ipR.study = ipR.study(6:end);
 elseif strcmp(ipR.study,'PFFvsGCI')
-    load([cd filesep 'PFF GCI\DataInput\GCI_PFF_Data.mat' ],...
+    load([cd filesep 'PFF GCI/DataInput/GCI_PFF_Data.mat' ],...
         'GCI_PFF_Pathology_Data','GCI_PFF_Seed_Data','tpts', 'regvgene_mean', 'BrainRegionReorderMat');
 elseif strcmp(ipR.study,'Henderson_Asyn')
-    load([cd filesep 'raw_data_mouse\Henderson_Asyn_Data.mat' ],...
+    load([cd filesep 'raw_data_mouse/Henderson_Asyn_Data.mat' ],...
         'Henderson_Asyn_Pathology_Data','Henderson_Asyn_Seed_Data','tpts');
 else
     load([cd filesep 'raw_data_mouse' filesep 'eNDM_mousedata.mat'],...
@@ -94,7 +94,7 @@ else
 end
 
 if strcmp(ipR.study,'PFFvsGCI')
-    load([cd filesep '\PFF GCI\DataInput\GCI_PFF_Connection.mat'],'GCI_PFF_Connection_Data');
+    load([cd filesep '/PFF GCI/DataInput/GCI_PFF_Connection.mat'],'GCI_PFF_Connection_Data');
 elseif strcmp(ipR.study,'Henderson_Asyn')
     load([cd filesep 'raw_data_mouse' filesep 'Henderson_Asyn_Data.mat'],'Connection');
 else

@@ -16,6 +16,7 @@ solvetype_ = 'analytic';
 volcorrect_ = 0;
 exclseed_costfun_ = 0;
 excltpts_costfun_ = [];
+Cnormtype_ = 'minmax';
 normtype_ = 'sum';
 w_dir_ = 0; 
 param_init_ = [NaN,0.5,1,0.5];
@@ -48,21 +49,23 @@ validScalar = @(x) isnumeric(x) && isscalar(x) && (x>=0);
 % validNonnegative = @(x) isnumeric(x) && all(x(:) >= 0);
 validBoolean = @(x) isscalar(x) && (x==0 || x==1);
 validChar = @(x) ischar(x);
-validStudy = @(x) ismember(x,{'IbaHippInj','IbaStrInj','Clavaguera','Hurtado',...
-                                'BolundaDSAD','BolundaCBD','DS4','DS6','DS9',...
-                                'asyn_human','asyn_mouse'});
+% validStudy = @(x) ismember(x,{'IbaHippInj','IbaStrInj','Clavaguera','Hurtado',...
+%                                 'BolundaDSAD','BolundaCBD','DS4','DS6','DS9',...
+%                                 'asyn_human','asyn_mouse'});
 validST = @(x) ismember(x,{'analytic','numeric'});
 validBoundsType = @(x) strcmp(x,'old') || strcmp(x(1:2),'CI');
 validParam = @(x) (length(x) == 4);
 validDataTypeENDM = @(x) ismember(x,{'gene','ct_tasic','ct_zeisel'});
 
-addParameter(ip, 'study', study_, validStudy);
+% addParameter(ip, 'study', study_, validStudy);
+addParameter(ip, 'study', study_, validChar);
 addParameter(ip, 'costfun', costfun_, validChar);
 addParameter(ip, 'solvetype', solvetype_, validST);
 addParameter(ip, 'volcorrect', volcorrect_, validBoolean);
 addParameter(ip, 'exclseed_costfun', exclseed_costfun_, validBoolean);
 addParameter(ip, 'excltpts_costfun', excltpts_costfun_);
 addParameter(ip, 'normtype', normtype_, validChar);
+addParameter(ip, 'Cnormtype', Cnormtype_, validChar);
 addParameter(ip, 'w_dir', w_dir_, validBoolean);
 addParameter(ip, 'param_init', param_init_, validParam);
 addParameter(ip, 'ub', ub_, validParam);
@@ -120,19 +123,54 @@ elseif strcmp(ipR.study(1:4),'asyn')
     load([cd filesep 'raw_data_mouse' filesep 'mouse_aSynData_426.mat'],...
         'data426','seed426','tpts');
     ipR.study = ipR.study(6:end);
+elseif strcmp(ipR.study,'Henderson')
+    load([cd filesep 'raw_data_mouse' filesep 'Henderson_Asyn_Data.mat'],...
+        'tpts','Henderson_Asyn_Seed_Data','Henderson_Asyn_Pathology_Data');
+    tpts_ = struct; tpts_.(ipR.study) = tpts.NTG; tpts = tpts_;
+    seed426 = struct; seed426.(ipR.study) = Henderson_Asyn_Seed_Data;
+    data426 = struct; data426.(ipR.study) = Henderson_Asyn_Pathology_Data.NTG;
+elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
+    load([cd filesep 'raw_data_mouse' filesep 'GCI_PFF_Data.mat'],...
+        'tpts','GCI_PFF_Pathology_Data','GCI_PFF_Seed_Data');
+    if strcmp(ipR.study,'GCI_Average_New')
+        tpts.(ipR.study) = tpts.GCI_Average;
+    end
+    seed426 = struct; seed426.(ipR.study) = GCI_PFF_Seed_Data;
+    data426 = struct; data426.(ipR.study) = GCI_PFF_Pathology_Data.(ipR.study);
 else
     load([cd filesep 'raw_data_mouse' filesep 'eNDM_mousedata.mat'],...
         'data426','seed426','tpts');
 end
-load([cd filesep 'raw_data_mouse' filesep 'eNDM_mousedata.mat'],'Networks');
+
+% Defining LinR (Lin 1989)
+% LinRcalc = @(x,y) 2*corr(x,y)*std(x)*std(y)/(std(x)^2 + std(y)^2 + (mean(x) - mean(y))^2);
 
 % Define connectome
-C = Networks.ret;
+if strcmp(ipR.study,'Henderson')
+    load([cd filesep 'raw_data_mouse' filesep 'Henderson_Asyn_Data.mat'],...
+        'Connection');    
+    C = Connection;% Define connectome
+if strcmp(ipR.study,'Henderson')
+    load([cd filesep 'raw_data_mouse' filesep 'Henderson_Asyn_Data.mat'],...
+        'Connection');    
+    C = Connection;
+elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
+    load([cd filesep 'raw_data_mouse' filesep 'GCI_PFF_Connection.mat'],...
+        'GCI_PFF_Connection_Data');
+    C = GCI_PFF_Connection_Data.raw;
+else
+    load([cd filesep 'raw_data_mouse' filesep 'eNDM_mousedata.mat'],'Networks')
+    C = Networks.ret;
+end
 
-% Normalize C (minmax)
-cmax = max(max(C));
-cmin = min(min(C));
-C = (C - cmin)./(cmax-cmin);
+% Normalize C
+if strcmp(ipR.Cnormtype,'eig')
+    C = C/max(eig(C));
+else
+    cmax = max(max(C));
+    cmin = min(min(C));
+    C = (C - cmin)./(cmax-cmin);
+end
 
 % Define cell type matrix, U
 if ~isequal(ipR.datalist_endm,{'random'})
@@ -154,6 +192,32 @@ if ~isequal(ipR.datalist_endm,{'random'})
     end
 else
     U = rand(size(C,1),1);
+end
+
+% Reorder U data if needed
+if strcmp(ipR.study,'Henderson')
+    error('No gene data on Henderson regional atlas at this time!')
+elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
+    load([cd filesep 'raw_data_mouse' filesep 'GCI_PFF_Data.mat'],...
+        'BrainRegionReorderMat');
+    load([cd filesep 'raw_data_mouse' filesep 'regionvoxels.mat'],...
+        'voxels');
+    BrainRegionReorderMat_2h = [BrainRegionReorderMat; (BrainRegionReorderMat+213)]; % add second hemisphere
+    voxels_2h = [voxels; voxels];
+    U_ = nan(size(BrainRegionReorderMat_2h,1),1);
+    voxels_ = U_;
+    for i = 1:length(U_)
+        CCF_inds = BrainRegionReorderMat_2h(i,:);
+        CCF_inds(isnan(CCF_inds)) = [];
+        if ~isempty(CCF_inds)
+            voxels_i = voxels_2h(CCF_inds);
+            U_(i) = (U(CCF_inds).' * voxels_i) / sum(voxels_i);
+            voxels_(i) = sum(voxels_i);
+        end
+    end
+    U_(isnan(U_)) = (U_(~isnan(U_)).' * voxels_(~isnan(U_))) / ...
+        sum(voxels_(~isnan(U_)));
+    U = U_;
 end
 
 U = U ./ nanmean(U);
