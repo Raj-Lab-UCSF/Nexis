@@ -13,6 +13,7 @@ volcorrect_ = 0;
 exclseed_costfun_ = 0;
 excltpts_costfun_ = [];
 normtype_ = 'sum';
+Cnormtype_ = 'minmax';
 w_dir_ = 0; 
 param_init_ = [NaN,0.5,1,0.5];
 ub_ = [Inf,Inf,Inf,1];
@@ -36,18 +37,20 @@ validBoolean = @(x) isscalar(x) && (x==0 || x==1);
 validChar = @(x) ischar(x);
 % validStudy = @(x) ismember(x,{'IbaHippInj','IbaStrInj','Clavaguera','Hurtado',...
 %                                 'BolundaDSAD','BolundaCBD','DS4','DS6','DS9',...
-%                                 'DS9_110','DS6_110','asyn_human','asyn_mouse'});
-validStudy = @(x) ischar(x);
+%                                 'asyn_human','asyn_mouse','Henderson','Peng_GCI',...
+%                                 'Peng_PFF'});
 validST = @(x) ismember(x,{'analytic','numeric'});
 validParam = @(x) (length(x) == 4);
 
-addParameter(ip, 'study', study_, validStudy);
+% addParameter(ip, 'study', study_, validStudy);
+addParameter(ip, 'study', study_, validChar);
 addParameter(ip, 'costfun', costfun_, validChar);
 addParameter(ip, 'solvetype', solvetype_, validST);
 addParameter(ip, 'volcorrect', volcorrect_, validBoolean);
 addParameter(ip, 'exclseed_costfun', exclseed_costfun_, validBoolean);
 addParameter(ip, 'excltpts_costfun', excltpts_costfun_);
 addParameter(ip, 'normtype', normtype_, validChar);
+addParameter(ip, 'Cnormtype', Cnormtype_, validChar);
 addParameter(ip, 'w_dir', w_dir_, validBoolean);
 addParameter(ip, 'param_init', param_init_, validParam);
 addParameter(ip, 'ub', ub_, validParam);
@@ -74,22 +77,50 @@ elseif strcmp(ipR.study(1:4),'asyn')
     load([cd filesep 'raw_data_mouse' filesep 'mouse_aSynData_426.mat'],...
         'data426','seed426','tpts');
     ipR.study = ipR.study(6:end);
+elseif strcmp(ipR.study,'Henderson')
+    load([cd filesep 'raw_data_mouse' filesep 'Henderson_Asyn_Data.mat'],...
+        'tpts','Henderson_Asyn_Seed_Data','Henderson_Asyn_Pathology_Data');
+    tpts_ = struct; tpts_.(ipR.study) = tpts.NTG; tpts = tpts_;
+    seed426 = struct; seed426.(ipR.study) = Henderson_Asyn_Seed_Data;
+    data426 = struct; data426.(ipR.study) = Henderson_Asyn_Pathology_Data.NTG;
+elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
+    load([cd filesep 'raw_data_mouse' filesep 'GCI_PFF_Data.mat'],...
+        'tpts','GCI_PFF_Pathology_Data','GCI_PFF_Seed_Data');
+    if strcmp(ipR.study,'GCI_Average_New')
+        tpts.(ipR.study) = tpts.GCI_Average;
+    end
+    seed426 = struct; seed426.(ipR.study) = GCI_PFF_Seed_Data;
+    data426 = struct; data426.(ipR.study) = GCI_PFF_Pathology_Data.(ipR.study);
 else
     load([cd filesep 'raw_data_mouse' filesep 'eNDM_mousedata.mat'],...
         'data426','seed426','tpts');
 end
-load([cd filesep 'raw_data_mouse' filesep 'eNDM_mousedata.mat'],'Networks');
 
 % Defining LinR (Lin 1989)
 % LinRcalc = @(x,y) 2*corr(x,y)*std(x)*std(y)/(std(x)^2 + std(y)^2 + (mean(x) - mean(y))^2);
 
 % Define connectome
-C = Networks.ret;
+if strcmp(ipR.study,'Henderson')
+    load([cd filesep 'raw_data_mouse' filesep 'Henderson_Asyn_Data.mat'],...
+        'Connection');    
+    C = Connection;
+elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
+    load([cd filesep 'raw_data_mouse' filesep 'GCI_PFF_Connection.mat'],...
+        'GCI_PFF_Connection_Data');
+    C = GCI_PFF_Connection_Data.raw;
+else
+    load([cd filesep 'raw_data_mouse' filesep 'eNDM_mousedata.mat'],'Networks')
+    C = Networks.ret;
+end
 
-% Normalize C (minmax)
-cmax = max(max(C));
-cmin = min(min(C));
-C = (C - cmin)./(cmax-cmin);
+% Normalize C
+if strcmp(ipR.Cnormtype,'eig')
+    C = C/max(eig(C));
+else
+    cmax = max(max(C));
+    cmin = min(min(C));
+    C = (C - cmin)./(cmax-cmin);
+end
 
 % Solve and store results
 outputs.ndm = struct;
@@ -257,7 +288,11 @@ else
         settonaninds = randperm(length(notnaninds));
         settonaninds = notnaninds(settonaninds(1:settonansize));
         pathology(settonaninds,:) = NaN;
+
         pathology = normalizer(pathology,ipR.normtype);
+%         Yuanxi's Comment: for testing the program
+%         pathology = pathology/nansum(pathology(:,1));
+
         if isnan(ipR.param_init(1))
             ipR.param_init(1) = nansum(pathology(:,1))/nnz(seed_location); % heuristic default, study-dependent
         end
@@ -403,6 +438,10 @@ else
     fprintf('Creating Optimal NDM Model\n');
     time_stamps = tpts.(ipR.study);
     pathology = normalizer(data426.(ipR.study),ipR.normtype);   
+    % Yuanxi's comment: for testing the program
+%     pathology = pathology/nansum(pathology(:,1));
+
+
     seed_location = seed426.(ipR.study);
     fldnames = fieldnames(outputs.ndm);
     param_fits = zeros(length(fldnames),length(outputs.ndm.(fldnames{1}).param_fit));

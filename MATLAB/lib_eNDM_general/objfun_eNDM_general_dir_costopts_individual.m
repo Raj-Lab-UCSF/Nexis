@@ -1,0 +1,108 @@
+% Objective function for eNDM_general
+%
+% param(1) = seed rescale factor
+% param(2) = alpha
+% param(3) = beta
+% param(4:(n_types+3)) = a
+% param((n_types+4):(2*n_types+3)) = b
+% param((2*n_types+4):(3*n_types+3)) = p
+
+function [f,newxt,newpath] = objfun_eNDM_general_dir_costopts_individual(param,seed_location,...
+    pathology,ts,C_,U_,solvetype_,volcorrect_,costfun_,excltpts_costfun_,exclseed_costfun_)
+
+LinRcalc = @(x,y) 2*corr(x,y)*std(x)*std(y)/(std(x)^2 + std(y)^2 + (mean(x) - mean(y))^2);
+n_types = size(U_,2);
+
+[~,n_mice] = size(pathology);
+x0_ = param(1:n_mice).*seed_location;
+alpha_ = param(n_mice+1);
+beta_ = param(n_mice+2);
+s_ = param(n_mice+3);
+a_ = param(4+n_mice:(n_types+n_mice+3));
+b_ = param((n_types+n_mice+4):(2*n_types+n_mice+3));
+p_ = param((2*n_types+n_mice+4):(3*n_types+n_mice+3));
+
+% Calculate predictions y with eNDM     
+    % Solve eNDM; 
+    ts(excltpts_costfun_) = [];
+    pathology(:,excltpts_costfun_) = [];
+    [y] = eNDM_general_dir_individual(x0_,ts,C_,U_,alpha_,beta_,s_,a_,b_,p_,solvetype_,volcorrect_);
+
+% Modify quadratic error objfun to accomodate NaN
+if logical(exclseed_costfun_)
+    seedbin = logical(seed_location);
+    y(seedbin,:) = NaN;
+    pathology(seedbin,:) = NaN;
+end
+
+if strcmp(costfun_,'sse_sum')
+    f = nansum(nansum((y - pathology).^2));
+elseif strcmp(costfun_,'rval_sum')
+    Rvalues = zeros(1,length(ts));
+    for jj = 1:length(ts)
+        Rvalues(jj) = corr(y(:,jj),pathology(:,jj), 'rows','complete');
+    end
+    f = length(ts) - sum(Rvalues);
+elseif strcmp(costfun_,'sse_end')
+    f = nansum(nansum((y(:,end) - pathology(:,end)).^2));
+elseif strcmp(costfun_,'rval_end')
+    Rvalues = zeros(1,length(ts));
+    for jj = 1:length(ts)
+        Rvalues(jj) = corr(y(:,jj),pathology(:,jj), 'rows','complete');
+    end
+    f = 1 - Rvalues(end);
+elseif strcmp(costfun_,'LinR')
+    Rvalues = zeros(1,length(ts));
+%     naninds = isnan(pathology(:,1)); % Yuanxi's Comment: Our dataset has some missing data. It could occur at different MPI. 
+%                                                             % I recommend that here could be revised to 'naninds = isnan(sum(pathology,2));'
+    naninds = isnan(prod(pathology,2));
+    newxt = y; newxt(naninds,:) = [];
+    newpath = pathology; newpath(naninds,:) = [];
+    for jj = 1:length(ts)
+        Rvalues(jj) = LinRcalc(newxt(:,jj),newpath(:,jj));
+    end
+    f = length(ts) - sum(Rvalues);
+%     f = length(ts) - sum(Rvalues) + sum(abs(param))/length(param);
+elseif strcmp(costfun_,'LinR_end')
+    Rvalues = zeros(1,length(ts));
+    naninds = isnan(prod(pathology,2));
+    newxt = y; newxt(naninds,:) = [];
+    newpath = pathology; newpath(naninds,:) = [];
+    for jj = 1:length(ts)
+        Rvalues(jj) = LinRcalc(newxt(:,jj),newpath(:,jj));
+    end
+    f = 1 - Rvalues(end);
+elseif strcmp(costfun_,'log_rval_sum')
+    Rvalues = zeros(1,length(ts));
+    finiteinds = isfinite(sum(log(pathology),2));
+    newxt = y;
+    for jj = 1:length(ts)
+        Rvalues(jj) = corr(log(y(finiteinds,jj)),log(pathology(finiteinds,jj)), 'rows','complete');
+    end
+    f = length(ts) - sum(Rvalues);
+
+elseif strcmp(costfun_,'log_rval_end')
+    Rvalues = zeros(1,length(ts));
+    finiteinds = isfinite(sum(log(pathology),2));
+    newxt = y;
+    for jj = 1:length(ts)
+        Rvalues(jj) = corr(log(y(finiteinds,jj)),log(pathology(finiteinds,jj)), 'rows','complete');
+    end
+    f = 1 - Rvalues(end);
+
+elseif strcmp(costfun_,'log_LinR_sum')
+    Rvalues = zeros(1,length(ts));
+    finiteinds = isfinite(sum(log(pathology),2));
+    newxt = y;
+    for jj = 1:length(ts)
+        Rvalues(jj) = LinRcalc(log(y(finiteinds,jj)),log(pathology(finiteinds,jj)));
+    end
+    f = length(ts) - sum(Rvalues);
+end
+% fprintf('f = %d\n',f)
+% display(seed_location.');
+% display(y);
+% display(pathology);
+
+end
+
