@@ -1,20 +1,24 @@
 function CorrelationPlotter_single(predicted,data,tpts,study,sv_types,...
-                                    geneorct,ispca,wdir,color,shape,savenclose)
+                                    geneorct,ispca,wdir,color,shape,exclinit,...
+                                    savenclose)
 
-if nargin < 11
+if nargin < 12
     savenclose = 0;
-    if nargin < 10
-        shape = 'o';
-        if nargin < 9
-            color = [1 0 0];
-            if nargin < 8
-                wdir = 0;
-                if nargin < 7
-                    ispca = 0;
-                    if nargin < 6
-                        geneorct = 'gene';
-                        if nargin < 5
-                            sv_types = {};
+    if nargin < 11
+        exclinit = 0;
+        if nargin < 10
+            shape = 'o';
+            if nargin < 9
+                color = [1 0 0];
+                if nargin < 8
+                    wdir = 0;
+                    if nargin < 7
+                        ispca = 0;
+                        if nargin < 6
+                            geneorct = 'gene';
+                            if nargin < 5
+                                sv_types = {};
+                            end
                         end
                     end
                 end
@@ -26,6 +30,11 @@ end
 notnaninds = ~isnan(data(:,1));
 data = data(notnaninds,:);
 predicted = predicted(notnaninds,:);
+if exclinit
+    data = data(:,2:end);
+    predicted = predicted(:,2:end);
+    tpts = tpts(2:end);
+end
 plot_max_data = max(max(data));
 plot_max_pred = max(max(predicted));
 

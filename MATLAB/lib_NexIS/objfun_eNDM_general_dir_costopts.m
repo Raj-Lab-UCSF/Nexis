@@ -7,7 +7,7 @@
 % param((n_types+4):(2*n_types+3)) = b
 % param((2*n_types+4):(3*n_types+3)) = p
 
-function [f,newxt,newpath] = objfun_eNDM_general_dir_costopts(param,...
+function [f,newxt,newpath] = objfun_eNDM_general_dir_costopts(param,seed_location,pathology,ts,C_,...
     U_,solvetype_,volcorrect_,costfun_,excltpts_costfun_,exclseed_costfun_)
 
 LinRcalc = @(x,y) 2*corr(x,y)*std(x)*std(y)/(std(x)^2 + std(y)^2 + (mean(x) - mean(y))^2);
