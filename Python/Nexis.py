@@ -83,13 +83,22 @@ class run_Nexis:
             inv_voxels_2hem = np.diag(np.squeeze(voxels_2hem)**(-1))
             L = np.mean(voxels_2hem) * np.dot(inv_voxels_2hem,L)
 
-        # define system dydt = Ax
+        # Define system dydt = Ax
         A = Gamma - (beta * L)
 
-        # solve analytically
+        # Solve analytically
         y = self.forward_sim(A,self.t_vec,x0)
         return y
 
+class data_conversion:
+    def __init__(self,datadir=''):
+        pass
+
+    def CCF_to_Data(self):
+        pass
+
+    def Data_to_CCF(self):
+        pass
 
         # def network_transfer(params,w):
         #     tau_e = params[0]

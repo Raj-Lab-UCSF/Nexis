@@ -1,4 +1,4 @@
-% NexIS Model
+% NexIS Model - FIX FOR ARBITRARY TIMES
 %
 % Evaluate NexIS predictions [y] at desired time stamps.
 %
