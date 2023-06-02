@@ -47,16 +47,16 @@ class run_Nexis:
         """
         # Define parameters
         ntypes = np.size(self.U,axis=1)
-        alpha = parameters[0] # global connectome-independent growth
-        beta = parameters[1] # global diffusivity rate 
-        gamma = parameters[2] # seed rescale value
-        s = parameters[3] # directionality (0 = anterograde, 1 = retrograde)
+        alpha = parameters[0] # global connectome-independent growth (range [0,5])
+        beta = parameters[1] # global diffusivity rate (range [0,5])
+        gamma = parameters[2] # seed rescale value (range [0,10])
+        s = parameters[3] # directionality (0 = anterograde, 1 = retrograde) (range [0,1])
         if self.w_dir==0:
             s = 0.5
         else:
             s = parameters[3] # directionality (0 = anterograde, 1 = retrograde)
-        b = np.transpose(parameters[4:(ntypes+4)]) # cell-type-dependent spread modifier
-        p = np.transpose(parameters[(ntypes+4):]) # cell-type-dependent growth modifier
+        b = np.transpose(parameters[4:(ntypes+4)]) # cell-type-dependent spread modifier (range [-5,5])
+        p = np.transpose(parameters[(ntypes+4):]) # cell-type-dependent growth modifier (range [-5,5])
         
         # Define starting pathology x0
         x0 = gamma * self.seed_vec
