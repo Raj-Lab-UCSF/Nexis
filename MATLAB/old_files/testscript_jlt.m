@@ -1,11 +1,11 @@
 rng(0); clear; clc;
-studylist = {'asyn_mouse'};
+studylist = {'DS4'};
 % niters = 10;
 % R2s = zeros(1,niters);
 for i = 1:length(studylist)
     outputs_ndm = stdNDM_mouse('study',studylist{i},'bootstrapping',0,...
         'w_dir',1,'volcorrect',1,'param_init',[NaN,0,1,0.5],'ub',[Inf,Inf,Inf,1],...
-        'lb',zeros(1,4),'algo','interior-point');
+        'lb',zeros(1,4));
 %     for j = 1:niters
 %         outputs_endm = eNDM_mouse('outputs_ndm',outputs_ndm,'study',studylist{i},...
 %             'w_dir',1,'bootstrapping_endm',0,'volcorrect',1,...
@@ -14,9 +14,18 @@ for i = 1:length(studylist)
 %         R2s(j) = outputs_endm.endm.Full.results.lm_Rsquared_adj;
 %     end
 end
-voxels_2hem = [voxels; voxels];
-conc_sum = sum(outputs_ndm.ndm.Full.predicted)
-mass_sum = sum(outputs_ndm.ndm.Full.predicted .* repmat(voxels_2hem,1,3)) 
+
+C = Connectomes.default;
+C = C/max(C(:));
+seed = seed426.DS4;
+x0 = seed * 0.8;
+time_stamps = [4,8,12];
+y = eNDM_general_dir(x0,time_stamps,C,zeros(426,1),0.2,3.5,0.65,0,0,0,'analytic',0);
+corr(y(:), data426.DS4(:),'rows','complete')^2
+
+% voxels_2hem = [voxels; voxels];
+% conc_sum = sum(outputs_ndm.ndm.Full.predicted)
+% mass_sum = sum(outputs_ndm.ndm.Full.predicted .* repmat(voxels_2hem,1,3)) 
 
 % % homeo = [2344, 801, 1162, 2305, 1540, 3062, 3240, 1717];
 % 
