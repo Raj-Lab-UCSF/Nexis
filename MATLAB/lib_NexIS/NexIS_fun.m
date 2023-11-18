@@ -84,7 +84,7 @@ if size(b,2) > size(b,1)
 end
 s_b = U_ * b;
 S_b = repmat(s_b,1,length(s_b)) + ones(length(s_b));
-L = L_raw .* S_b.';
+L = L_raw .* S_b.'; % This needs to be fixed; may not be a huge issue but this is not the way the math is meant to be encoded in the model
 if logical(volcorrect_) && ismember(study_,[taustudies {'asyn_mouse','asyn_human'}]) 
     load([matdir_ filesep 'DefaultAtlas.mat'], 'DefaultAtlas');
     voxels_2hem = DefaultAtlas.volumes;
