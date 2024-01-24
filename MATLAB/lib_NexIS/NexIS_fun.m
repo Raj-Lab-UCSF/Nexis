@@ -1,4 +1,4 @@
-% NexIS Model - FIX FOR ARBITRARY TIMES
+% NexIS Model 
 %
 % Evaluate NexIS predictions [y] at desired time stamps.
 %
@@ -15,49 +15,30 @@
 % Output:
 % y  =  NexIS predicted vectors (columns) at each time stamp
 
-function [y,A] = NexIS_fun(study_,U_,params_,solvetype_,volcorrect_,matdir_)
-if nargin < 6
+function [y,A] = NexIS_fun(C_,U_,time_stamps_,x0,params_,solvetype_,volcorrect_,matdir_)
+if nargin < 8
     matdir_ = [cd filesep 'raw_data_mouse'];
-    if nargin < 5
+    if nargin < 7
         volcorrect_ = 1;
-        if nargin < 4
+        if nargin < 6
             solvetype_ = 'numeric';
         end
     end
 end
 
-% Load appropriate data struct, load correct connectome
-taustudies = {'IbaP301S','IbaHippInj','IbaStrInj','BoludaDSAD','BoludaCBD'...
-    'DS1','DS4','DS6','DS6_110','DS7','DS9','DS9_110','DS10'};
-asynstudies = {'asyn_mouse','asyn_human','GCI','PFF','Henderson'};
-
-load([matdir_ filesep "Connectomes.mat"],'Connectomes')
-if ismember(study_,taustudies)
-    load([matdir_ filesep "Mouse_Tauopathy_Data_HigherQ.mat"], 'mousedata_struct');
-    C = Connectomes.default;
-elseif ismember(study_,asynstudies)
-    load([matdir_ filesep "Mouse_Synuclein_Data.mat"], 'mousedata_struct');
-    if ismember(study_,{'asyn_mouse','asyn_human'})
-        C = Connectomes.default;
-    elseif ismember(study_,{'GCI','PFF'})
-        C = Connectomes.Peng;
-    elseif strcmp(study_,'Henderson')
-        C = Connectomes.(study_);
-    end
-else
-    error('Provided study name is invalid.');
-end
-
 % Define parameters and model-specific conditions
 % if ~iterative_
+    n_types = (length(params_) - 4)/2;
     gamma = params_(1);
     alpha = params_(2);
     beta = params_(3);
     s = params_(4);
-    b = param(5:(n_types+4));
-    p = param((n_types+5):(2*n_types+4));
-    time_stamps = mousedata_struct.(study_).time_stamps;
-    x0 = gamma * mousedata_struct.(study_).seed;
+    b = params_(5:(n_types+4));
+    p = params_((n_types+5):(2*n_types+4));
+    if isequal(unique(x0),[0;1]) % if binary seed location and not using baseline
+        x0 = gamma*x0;
+    end
+
 % else
 % % Fill in later
 % end
@@ -73,10 +54,10 @@ if size(p,2) > size(p,1)
     p = p.';
 end
 s_p = U_ * p; 
-Gamma = diag(alpha + s_p); %% Yuanxi's Comment: if s_p is an effect matrix, why not alpha*s_p?
+Gamma = diag(alpha + s_p);
 
 % Define Laplacian matrix L
-C_dir = (1-s)*C.' + s*C;
+C_dir = (1-s)*C_.' + s*C_;
 coldegree = (sum(C_dir, 1));
 L_raw = diag(coldegree) - C_dir;
 if size(b,2) > size(b,1)
@@ -84,12 +65,11 @@ if size(b,2) > size(b,1)
 end
 s_b = U_ * b;
 S_b = repmat(s_b,1,length(s_b)) + ones(length(s_b));
-L = L_raw .* S_b.'; % This needs to be fixed; may not be a huge issue but this is not the way the math is meant to be encoded in the model
-if logical(volcorrect_) && ismember(study_,[taustudies {'asyn_mouse','asyn_human'}]) 
+L = L_raw .* S_b.'; 
+if logical(volcorrect_)
     load([matdir_ filesep 'DefaultAtlas.mat'], 'DefaultAtlas');
     voxels_2hem = DefaultAtlas.volumes;
 else
-    warning('Volume of atlas for study undefined; not applying volume correction')
     voxels_2hem = ones(size(L,1),1);
 end
 L = mean(voxels_2hem) * diag(voxels_2hem.^(-1)) * L; % correction proposed by Putra et al. 2021
@@ -99,13 +79,13 @@ A = Gamma - beta * L;
 
 % solve system using analytical or numerical methods
 if strcmp(solvetype_,'analytic')
-    y = zeros(size(C,1),length(time_stamps));
+    y = zeros(size(C_,1),length(time_stamps_));
     y_analytic = @(t,x0) expm(A*t) * x0;
-    for i = 1:length(time_stamps)
-        y(:,i) = y_analytic(time_stamps(i),x0);
+    for i = 1:length(time_stamps_)
+        y(:,i) = y_analytic(time_stamps_(i),x0);
     end
 else
-    [~,y] = ode45(@(t,x) (A*x + B),time_stamps,x0);    
+    [~,y] = ode45(@(t,x) (A*x + B),time_stamps_,x0);    
     y = y'; 
 end
 end

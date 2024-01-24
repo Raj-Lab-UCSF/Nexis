@@ -53,6 +53,7 @@ addParameter(ip, 'seed', seed_);
 addParameter(ip, 'matdir', matdir_);
 addParameter(ip, 'use_dataspace', use_dataspace_, validBoolean);
 addParameter(ip, 'costfun', costfun_, validChar);
+addParameter(ip, 'costfun', costfun_, validChar);
 addParameter(ip, 'solvetype', solvetype_, validST);
 addParameter(ip, 'volcorrect', volcorrect_, validBoolean);
 addParameter(ip, 'exclseed_costfun', exclseed_costfun_, validBoolean);
@@ -80,12 +81,10 @@ ipR = ip.Results;
 
 % Load in data from NexIS/raw_data_mouse directory if needed
 if isempty(ipR.C) && ~strcmp(ipR.study,'User-specified')
-    if (length(ipR.study) > 3) && strcmp(ipR.study(1:4),'asyn')
+    if strcmp(ipR.study(1:4),'asyn')
         load([ipR.matdir filesep 'mouse_aSynData_426.mat'],...
             'data426','seed426','tpts');
         ipR.study = ipR.study(6:end);
-        load([ipR.matdir filesep 'Connectomes.mat'],'Connectomes');
-        C = Connectomes.default;
     elseif strcmp(ipR.study,'Henderson')
         load([ipR.matdir filesep 'Henderson_Asyn_Data.mat'],...
             'tpts','Henderson_Asyn_Seed_Data','Henderson_Asyn_Pathology_Data');
@@ -141,7 +140,7 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
             seed_location = pathology(:,1);
-            pathology = pathology(:,2:end);
+            pathology = pathology(2:end);
             time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
             ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
         end
@@ -153,9 +152,6 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
         time_stamps_orig = time_stamps;
     end
     U = zeros(size(C,1),1);
-    if any(isnan(seed_location))
-        seed_location(isnan(seed_location)) = 0;
-    end
     if isnan(ipR.param_init(1))
         ipR.param_init(1) = sum(pathology(:,1),'omitnan')/nnz(seed_location); % heuristic default, study-dependent
     end
@@ -206,9 +202,6 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
             seed_save = CCFToData(seed_location,ipR.study,ipR.matdir);
             ynum_save = ynum;
         end
-    else
-        seed_save = seed_location;
-        ynum_save = ynum;
     end
     outputs.nexis_global.Full.data = pathology_orig; % this has been normalized
     outputs.nexis_global.Full.time_stamps = time_stamps_orig;
@@ -303,26 +296,14 @@ else % With bootstrapping of parameters
     for i = 1:ipR.niters
         fldname = sprintf('Iter_%d',i);
         time_stamps = tpts.(ipR.study);
-        if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
+        if size(C,1) ~= size(data426.(ipR.study),1) && ~isnan(seed426.(ipR.study))
             pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
-            pathology = normalizer(pathology_raw,ipR.normtype);
-            pathology_orig = pathology;
-            time_stamps_orig = time_stamps;
-            if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
-                seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
-            else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
-                seed_location = pathology(:,1);
-                pathology = pathology(2:end);
-                time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
-                ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
-            end
-        else % Use pathology and seed as is
+            seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
+        else
             pathology_raw = data426.(ipR.study);
             seed_location = seed426.(ipR.study);
-            pathology = normalizer(pathology_raw,ipR.normtype);
-            pathology_orig = pathology;
-            time_stamps_orig = time_stamps;
         end
+        pathology = normalizer(pathology_raw,ipR.normtype);
         U = zeros(size(C,1),1);
         fprintf('NexIS:global Bootstrapping Iteration %d/%d\n',i,ipR.niters);
         notnaninds = find(~isnan(pathology(:,1)));
@@ -333,7 +314,7 @@ else % With bootstrapping of parameters
         pathology = normalizer(pathology,ipR.normtype);
 
         if isnan(ipR.param_init(1))
-            ipR.param_init(1) = sum(pathology(:,1),'omitnan')/nnz(seed_location); % heuristic default, study-dependent
+            ipR.param_init(1) = nansum(pathology(:,1))/nnz(seed_location); % heuristic default, study-dependent
         end
 
         if ~logical(ipR.w_dir)
