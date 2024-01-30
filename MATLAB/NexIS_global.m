@@ -299,12 +299,21 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
         disp(' ')
     end
 else % With bootstrapping of parameters
+        
+        
+
     rng(0);
     for i = 1:ipR.niters
         fldname = sprintf('Iter_%d',i);
         time_stamps = tpts.(ipR.study);
         if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
-            pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
+            pathology_raw = data426.(ipR.study);
+            notnaninds = find(~isnan(pathology_raw(:,1)));
+            settonansize = round((1-ipR.resample_rate)*length(notnaninds));
+            settonaninds = randperm(length(notnaninds));
+            settonaninds = notnaninds(settonaninds(1:settonansize));
+            pathology_raw(settonaninds,:) = NaN;
+            pathology_raw = DataToCCF(pathology_raw,ipR.study,ipR.matdir);
             pathology = normalizer(pathology_raw,ipR.normtype);
             pathology_orig = pathology;
             time_stamps_orig = time_stamps;
@@ -312,12 +321,17 @@ else % With bootstrapping of parameters
                 seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
             else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
                 seed_location = pathology(:,1);
-                pathology = pathology(2:end);
+                pathology = pathology(:,2:end);
                 time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
                 ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
             end
         else % Use pathology and seed as is
             pathology_raw = data426.(ipR.study);
+            notnaninds = find(~isnan(pathology(:,1)));
+            settonansize = round((1-ipR.resample_rate)*length(notnaninds));
+            settonaninds = randperm(length(notnaninds));
+            settonaninds = notnaninds(settonaninds(1:settonansize));
+            pathology_raw(settonaninds,:) = NaN;
             seed_location = seed426.(ipR.study);
             pathology = normalizer(pathology_raw,ipR.normtype);
             pathology_orig = pathology;
@@ -325,13 +339,9 @@ else % With bootstrapping of parameters
         end
         U = zeros(size(C,1),1);
         fprintf('NexIS:global Bootstrapping Iteration %d/%d\n',i,ipR.niters);
-        notnaninds = find(~isnan(pathology(:,1)));
-        settonansize = round((1-ipR.resample_rate)*length(notnaninds));
-        settonaninds = randperm(length(notnaninds));
-        settonaninds = notnaninds(settonaninds(1:settonansize));
-        pathology(settonaninds,:) = NaN;
-        pathology = normalizer(pathology,ipR.normtype);
-
+        if any(isnan(seed_location))
+            seed_location(isnan(seed_location)) = 0;
+        end
         if isnan(ipR.param_init(1))
             ipR.param_init(1) = sum(pathology(:,1),'omitnan')/nnz(seed_location); % heuristic default, study-dependent
         end
@@ -347,13 +357,14 @@ else % With bootstrapping of parameters
             mordervec(m) = inclparam;
         end
         morder = 1 + sum(mordervec);
-        param_init = [ipR.param_init,zeros(1,3)]; % dummy values for a, b, and p
-        lb = [ipR.lb,zeros(1,3)]; % dummy values for a, b, and p
-        ub = [ipR.ub,zeros(1,3)]; % dummy values for a, b, and p
+        param_init = [ipR.param_init,zeros(1,2)]; % dummy values for b and p
+        lb = [ipR.lb,zeros(1,2)]; % dummy values for b and p
+        ub = [ipR.ub,zeros(1,2)]; % dummy values for b and p
         
-        objfun_handle = @(param) objfun_eNDM_general_dir_costopts(param,...
-            seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,...
-            ipR.costfun,ipR.excltpts_costfun,ipR.exclseed_costfun);
+        objfun_handle = @(param) CostFunction_NexIS(param,C,U,time_stamps,...
+            seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.costfun,...
+            ipR.excltpts_costfun,ipR.exclseed_costfun,ipR.use_dataspace,ipR.study,...
+            ipR.logtrans,ipR.matdir);
         if logical(ipR.fmindisplay)
             options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
                 'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
@@ -379,21 +390,32 @@ else % With bootstrapping of parameters
             end
         end
         
-        % Solve eNDM with the optimal parameters
-        x0_num = seed_location*param_num(1);
-        alpha_num = param_num(2);
-        beta_num = param_num(3);
-        s_num = param_num(4); % not fit if directionality is turned off
-        a_num = param_num(5); % not fit
-        b_num = param_num(6); % not fit
-        p_num = param_num(7); % not fit
-        ynum = eNDM_general_dir(x0_num,time_stamps,C,U,alpha_num,beta_num,s_num,a_num,b_num,p_num,ipR.solvetype,ipR.volcorrect);
+        % Solve NexIS global with the optimized parameters
+        ynum = NexIS_fun(C,U,time_stamps,seed_location,param_num,ipR.solvetype,ipR.volcorrect,ipR.matdir);
         
-        outputs.nexis_global.(fldname).data = pathology;
-        outputs.nexis_global.(fldname).time_stamps = time_stamps;
-        outputs.nexis_global.(fldname).predicted = ynum;
+        % Store all outputs
+        if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) % Convert back to data space
+            pathology = CCFToData(pathology,ipR.study,ipR.matdir);
+            pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
+            ynum = CCFToData(ynum,ipR.study,ipR.matdir);
+            if isnan(seed426.(ipR.study))
+                seed_save = NaN;
+                ynum_save = [pathology_orig(:,1), ynum]; % save ynum with baseline to keep consistent with pathology_orig
+            else
+                seed_save = CCFToData(seed_location,ipR.study,ipR.matdir);
+                ynum_save = ynum;
+            end
+        else
+            seed_save = seed_location;
+            ynum_save = ynum;
+        end
+
+        outputs.nexis_global.(fldname).data = pathology_orig;
+        outputs.nexis_global.(fldname).time_stamps = time_stamps_orig;
+        outputs.nexis_global.(fldname).predicted = ynum_save;
         outputs.nexis_global.(fldname).param_fit = param_num;
         outputs.nexis_global.(fldname).fval = fval_num;
+        outputs.nexis_global.(fldname).init.seed = seed_save;
         outputs.nexis_global.(fldname).init.C = C;
         if ismember(ipR.study,{'human','mouse'})
             outputs.nexis_global.(fldname).init.study = ['asyn ' ipR.study];
@@ -445,7 +467,7 @@ else % With bootstrapping of parameters
         outputs.nexis_global.(fldname).results.lm_Rsquared_adj = lm_nexis.Rsquared.Adjusted;
         if logical(ipR.verbose)
             disp('--------------------------------------------------')
-            disp('General eNDM minimizing quadratic error at all time stamps with fmincon')
+            disp('General NexIS:global minimizing quadratic error at all time stamps with fmincon')
             disp(' ')
             disp(['Fit seed rescale value = ' num2str(param_num(1))])
             disp(['Fit alpha = ' num2str(param_num(2))])
@@ -476,34 +498,68 @@ else % With bootstrapping of parameters
     
     fprintf('Creating Optimal NDM Model\n');
     time_stamps = tpts.(ipR.study);
-    pathology = normalizer(data426.(ipR.study),ipR.normtype);   
-    % Yuanxi's comment: for testing the program
-%     pathology = pathology/nansum(pathology(:,1));
 
+    if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
+        pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
+        pathology = normalizer(pathology_raw,ipR.normtype);
+        pathology_orig = pathology;
+        time_stamps_orig = time_stamps;
+        if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
+            seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
+        else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
+            seed_location = pathology(:,1);
+            pathology = pathology(:,2:end);
+            time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+            ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+        end
+    else % Use pathology and seed as is
+        pathology_raw = data426.(ipR.study);
+        seed_location = seed426.(ipR.study);
+        pathology = normalizer(pathology_raw,ipR.normtype);
+        pathology_orig = pathology;
+        time_stamps_orig = time_stamps;
+    end
+    U = zeros(size(C,1),1);
+    if any(isnan(seed_location))
+        seed_location(isnan(seed_location)) = 0;
+    end
 
-    seed_location = seed426.(ipR.study);
     fldnames = fieldnames(outputs.nexis_global);
     param_fits = zeros(length(fldnames),length(outputs.nexis_global.(fldnames{1}).param_fit));
     for i = 1:length(fldnames)
         fldname = fldnames{i};
         param_fits(i,:) = outputs.nexis_global.(fldname).param_fit;
     end
+    
+    % Evaluate NexIS:global with best estimate of parameters
     param_opt = mean(param_fits);
-    x0_opt = seed_location*param_opt(1);
-    alpha_opt = param_opt(2);
-    beta_opt = param_opt(3);
-    s_opt = param_opt(4); % not fit if directionality is turned off
-    a_opt = param_opt(5); % not fit
-    b_opt = param_opt(6); % not fit
-    p_opt = param_opt(7); % not fit
-    yopt = eNDM_general_dir(x0_opt,time_stamps,C,U,alpha_opt,beta_opt,s_opt,a_opt,b_opt,p_opt,ipR.solvetype,ipR.volcorrect);
-    outputs.nexis_global.Full.data = pathology;
-    outputs.nexis_global.Full.time_stamps = time_stamps;
-    outputs.nexis_global.Full.predicted = yopt;
+    yopt = NexIS_fun(C,U,time_stamps,seed_location,param_opt,ipR.solvetype,ipR.volcorrect,ipR.matdir);
+        
+    % Store all outputs
+    if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) % Convert back to data space
+        pathology = CCFToData(pathology,ipR.study,ipR.matdir);
+        pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
+        yopt = CCFToData(yopt,ipR.study,ipR.matdir);
+        if isnan(seed426.(ipR.study))
+            seed_save = NaN;
+            yopt_save = [pathology_orig(:,1), yopt]; % save yopt with baseline to keep consistent with pathology_orig
+        else
+            seed_save = CCFToData(seed_location,ipR.study,ipR.matdir);
+            yopt_save = yopt;
+        end
+    else
+        seed_save = seed_location;
+        yopt_save = yopt;
+    end
+    outputs.nexis_global.Full.data = pathology_orig;
+    outputs.nexis_global.Full.time_stamps = time_stamps_orig;
+    outputs.nexis_global.Full.predicted = yopt_save;
     outputs.nexis_global.Full.param_fit = param_opt;
-    outputs.nexis_global.Full.fval = objfun_eNDM_general_dir_costopts(param_opt,...
-        seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,...
-        ipR.costfun,ipR.excltpts_costfun,ipR.exclseed_costfun);
+    outputs.nexis_global.Full.fval = CostFunction_NexIS(param_opt,C,U,time_stamps,...
+            seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.costfun,...
+            ipR.excltpts_costfun,ipR.exclseed_costfun,ipR.use_dataspace,ipR.study,...
+            ipR.logtrans,ipR.matdir);
+    outputs.nexis_global.Full.init.seed = seed_save;
     outputs.nexis_global.Full.init = outputs.nexis_global.(fldnames{1}).init;
     outputs.nexis_global.Full.fmincon = [];
     Rvalues = zeros(1,length(time_stamps));
@@ -512,7 +568,7 @@ else % With bootstrapping of parameters
         Rvalues(jj) = corr(yopt(:,jj),pathology(:,jj), 'rows','complete');
         % elseif strcmp(ipR.corrtype,'R_c')
         %    naninds = isnan(pathology(:,1));
-        %    newxt = ynum; newxt(naninds,:) = [];
+        %    newxt = yopt; newxt(naninds,:) = [];
         %    newpath = pathology; newpath(naninds,:) = [];
         %    Rvalues(jj) = LinRcalc(newxt(:,jj),newpath(:,jj));
         % end
