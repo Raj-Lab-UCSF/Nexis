@@ -251,23 +251,23 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     P = reshape(pathology, [], 1);
     Y = reshape(ynum, [], 1);
     numObs1 = length(P(~isnan(P)));
-    lm_endm = fitlm(Y, P);
-    logL = lm_endm.LogLikelihood;
+    lm_nexis = fitlm(Y, P);
+    logL = lm_nexis.LogLikelihood;
     outputs.nexis_global.Full.results.lm_LogL = logL;
     outputs.nexis_global.Full.results.lm_AIC = -2*logL + 2*morder;
     outputs.nexis_global.Full.results.lm_BIC = -2*logL + log(numObs1)*morder;
-    outputs.nexis_global.Full.results.lm_intercept = lm_endm.Coefficients.Estimate(1);
-    outputs.nexis_global.Full.results.lm_pval = lm_endm.Coefficients.pValue(1);
-    outputs.nexis_global.Full.results.lm_Rsquared_ord = lm_endm.Rsquared.Ordinary;
-    outputs.nexis_global.Full.results.lm_Rsquared_adj = lm_endm.Rsquared.Adjusted;
+    outputs.nexis_global.Full.results.lm_intercept = lm_nexis.Coefficients.Estimate(1);
+    outputs.nexis_global.Full.results.lm_pval = lm_nexis.Coefficients.pValue(2);
+    outputs.nexis_global.Full.results.lm_Rsquared_ord = lm_nexis.Rsquared.Ordinary;
+    outputs.nexis_global.Full.results.lm_Rsquared_adj = lm_nexis.Rsquared.Adjusted;
     
-    flow = FlowCalculator(ynum,C,param_num(2),1,U,param_num(5));
-    for i = 1:size(flow,3)
-        flow_ = flow(:,:,i);
-        flow_(flow_ < prctile(nonzeros(flow),ipR.flowthresh)) = 0;
-        flow(:,:,i) = flow_;
-    end
-    outputs.nexis_global.Full.flow = flow;
+    % flow = FlowCalculator(ynum,C,param_num(2),1,U,param_num(5));
+    % for i = 1:size(flow,3)
+    %     flow_ = flow(:,:,i);
+    %     flow_(flow_ < prctile(nonzeros(flow),ipR.flowthresh)) = 0;
+    %     flow(:,:,i) = flow_;
+    % end
+    % outputs.nexis_global.Full.flow = flow;
     
     if logical(ipR.verbose)
         disp('--------------------------------------------------')
@@ -434,15 +434,15 @@ else % With bootstrapping of parameters
         P = reshape(pathology, [], 1);
         Y = reshape(ynum, [], 1);
         numObs1 = length(P(~isnan(P)));
-        lm_endm = fitlm(Y, P);
-        logL = lm_endm.LogLikelihood;
+        lm_nexis = fitlm(Y, P);
+        logL = lm_nexis.LogLikelihood;
         outputs.nexis_global.(fldname).results.lm_LogL = logL;
         outputs.nexis_global.(fldname).results.lm_AIC = -2*logL + 2*morder;
         outputs.nexis_global.(fldname).results.lm_BIC = -2*logL + log(numObs1)*morder;
-        outputs.nexis_global.(fldname).results.lm_intercept = lm_endm.Coefficients.Estimate(1);
-        outputs.nexis_global.(fldname).results.lm_pval = lm_endm.Coefficients.pValue(1);
-        outputs.nexis_global.(fldname).results.lm_Rsquared_ord = lm_endm.Rsquared.Ordinary;
-        outputs.nexis_global.(fldname).results.lm_Rsquared_adj = lm_endm.Rsquared.Adjusted;
+        outputs.nexis_global.(fldname).results.lm_intercept = lm_nexis.Coefficients.Estimate(1);
+        outputs.nexis_global.(fldname).results.lm_pval = lm_nexis.Coefficients.pValue(2);
+        outputs.nexis_global.(fldname).results.lm_Rsquared_ord = lm_nexis.Rsquared.Ordinary;
+        outputs.nexis_global.(fldname).results.lm_Rsquared_adj = lm_nexis.Rsquared.Adjusted;
         if logical(ipR.verbose)
             disp('--------------------------------------------------')
             disp('General eNDM minimizing quadratic error at all time stamps with fmincon')
@@ -521,23 +521,23 @@ else % With bootstrapping of parameters
     P = reshape(pathology, [], 1);
     Y = reshape(yopt, [], 1);
     numObs1 = length(P(~isnan(P)));
-    lm_endm = fitlm(Y, P);
-    logL = lm_endm.LogLikelihood;
+    lm_nexis = fitlm(Y, P);
+    logL = lm_nexis.LogLikelihood;
     outputs.nexis_global.Full.results.lm_LogL = logL;
     outputs.nexis_global.Full.results.lm_AIC = -2*logL + 2*morder;
     outputs.nexis_global.Full.results.lm_BIC = -2*logL + log(numObs1)*morder;
-    outputs.nexis_global.Full.results.lm_intercept = lm_endm.Coefficients.Estimate(1);
-    outputs.nexis_global.Full.results.lm_pval = lm_endm.Coefficients.pValue(1);
-    outputs.nexis_global.Full.results.lm_Rsquared_ord = lm_endm.Rsquared.Ordinary;
-    outputs.nexis_global.Full.results.lm_Rsquared_adj = lm_endm.Rsquared.Adjusted;
+    outputs.nexis_global.Full.results.lm_intercept = lm_nexis.Coefficients.Estimate(1);
+    outputs.nexis_global.Full.results.lm_pval = lm_nexis.Coefficients.pValue(1);
+    outputs.nexis_global.Full.results.lm_Rsquared_ord = lm_nexis.Rsquared.Ordinary;
+    outputs.nexis_global.Full.results.lm_Rsquared_adj = lm_nexis.Rsquared.Adjusted;
     
-    flow = FlowCalculator(yopt,C,beta_opt,1,U,b_opt);
-    for i = 1:size(flow,3)
-        flow_ = flow(:,:,i);
-        flow_(flow_ < prctile(nonzeros(flow),ipR.flowthresh)) = 0;
-        flow(:,:,i) = flow_;
-    end
-    outputs.nexis_global.Full.flow = flow;    
+    % flow = FlowCalculator(yopt,C,beta_opt,1,U,b_opt);
+    % for i = 1:size(flow,3)
+    %     flow_ = flow(:,:,i);
+    %     flow_(flow_ < prctile(nonzeros(flow),ipR.flowthresh)) = 0;
+    %     flow(:,:,i) = flow_;
+    % end
+    % outputs.nexis_global.Full.flow = flow;    
     
     if logical(ipR.verbose)
         disp('--------------------------------------------------')

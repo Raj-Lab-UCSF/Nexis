@@ -1,5 +1,5 @@
 rng(0); clear; clc;
-studylist = {'DS4'};
+studylist = {'Hurtado'};
 matdir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Nexis/raw_data_mouse';
 % x = [0.536129657164085,0.25,1.89,0.500000000000000];
 % niters = 10;
@@ -13,9 +13,9 @@ for i = 1:length(studylist)
         'w_dir',1,'volcorrect',1,'param_init',[NaN,0,1,0.5],'ub',[Inf,Inf,Inf,1],...
         'lb',zeros(1,4),'use_dataspace',0);
     
-    % outputs_ng_ds = NexIS_global('study',studylist{i},'bootstrapping',0,...
-    %     'w_dir',1,'volcorrect',1,'param_init',[NaN,0,1,0.5],'ub',[Inf,Inf,Inf,1],...
-    %     'lb',zeros(1,4),'use_dataspace',1);
+    outputs_ng_ds = NexIS_global('study',studylist{i},'bootstrapping',0,...
+        'w_dir',1,'volcorrect',1,'param_init',[NaN,0,1,0.5],'ub',[Inf,Inf,Inf,1],...
+        'lb',zeros(1,4),'use_dataspace',1);
 end
 
 

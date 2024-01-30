@@ -19,8 +19,9 @@ seedregs = seed_;
 
 % Calculate predictions y with NexIS
 predicted = NexIS_fun(C_,U_,ts,seedregs,params_,solvetype_,volcorrect_,matdir_);
-if use_dataspace_ && ~strcmp(studyname_,'User-specified')
+if use_dataspace_ && ~strcmp(studyname_,'User-specified') 
     predicted = CCFToData(predicted,studyname_,matdir_);
+    pathology = CCFToData(pathology,studyname_,matdir_);
 end
 
 % Exclude selected time points from cost function
