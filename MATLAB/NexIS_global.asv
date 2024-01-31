@@ -534,7 +534,7 @@ else % With bootstrapping of parameters
         
     % Store all outputs
     if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) 
-        pathology_fvalcalc = pathology; % need pathology in CCF space for cost function input
+        pathology_fvalcalc = pathology; % need pathology in 
         pathology = CCFToData(pathology,ipR.study,ipR.matdir);% Convert back to data space
         pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
         yopt = CCFToData(yopt,ipR.study,ipR.matdir);
@@ -581,7 +581,7 @@ else % With bootstrapping of parameters
     outputs.nexis_global.Full.results.lm_AIC = -2*logL + 2*morder;
     outputs.nexis_global.Full.results.lm_BIC = -2*logL + log(numObs1)*morder;
     outputs.nexis_global.Full.results.lm_intercept = lm_nexis.Coefficients.Estimate(1);
-    outputs.nexis_global.Full.results.lm_pval = lm_nexis.Coefficients.pValue(2);
+    outputs.nexis_global.Full.results.lm_pval = lm_nexis.Coefficients.pValue(1);
     outputs.nexis_global.Full.results.lm_Rsquared_ord = lm_nexis.Rsquared.Ordinary;
     outputs.nexis_global.Full.results.lm_Rsquared_adj = lm_nexis.Rsquared.Adjusted;
     
@@ -622,9 +622,9 @@ end
 
     function normdata = normalizer(data,ntype)
         if strcmp(ntype,'sum')
-            normdata = data/sum(data(:,1),'omitnan');
+            normdata = data/nansum(data(:,1));
         elseif strcmp(ntype,'mean')
-            normdata = data/mean(data(:,1),'omitnan');
+            normdata = data/nanmean(data(:,1));
         elseif strcmp(ntype,'norm2')
             normdata = data/norm(data(:,1),2);
         elseif strcmp(ntype,'log')
