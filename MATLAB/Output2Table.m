@@ -4,9 +4,9 @@ fldnames = fieldnames(outputs);
 if nargin < 4
     filepath = cd;
     if nargin < 3
-        datestr = date;
+        datestr = datetime('today');
         if ~ismember('endm',fldnames)
-            filename = ['summary_Nexis_mouse_' outputs.ndm.Full.init.study...
+            filename = ['summary_Nexis_mouse_' outputs.nexis_global.Full.init.study...
                 '_global_' datestr];             
         else
             typename = outputs.endm.Full.init.datalist_endm(1);
@@ -69,6 +69,9 @@ else
 end
 
 ts = outputs.(fldnames{1}).Full.time_stamps;
+if isnan(outputs.(fldnames{1}).Full.init.seed)
+    ts = ts(2:end);
+end
 for i = 1:length(ts)
     columnnames{end+1} = sprintf('R, t = %d',ts(i)); vartypes{end+1} = 'double';
 end
@@ -91,7 +94,7 @@ for k = 1:length(rownames)
         end
 
         for i = 1:length(typenames)
-            if strcmp('ndm',rownames{k})
+            if strcmp('nexis_global',rownames{k})
                 summarytable{k,index} = "None"; index = index + 1;
             else
                 summarytable{k,index} = string(typenames{i}); index = index + 1;
@@ -102,7 +105,7 @@ for k = 1:length(rownames)
     end
     
     if ismember('endm',fldnames)
-        if strcmp('ndm',rownames{k})
+        if strcmp('nexis_global',rownames{k})
             summarytable{k,index} = "No"; index = index + 1;
         else
             if ~logical(outputs.endm.Full.init.datapca_endm)
@@ -124,14 +127,14 @@ for k = 1:length(rownames)
         if ~logical(outputs.(fldnames{k}).Full.init.w_dir)
             inclinds(4) = NaN;
         end
-        if strcmp('endm',fldnames{k}) && (length(outputs.endm.Full.init.datalist_endm)>1)  && ...
-                ~logical(outputs.endm.Full.init.datapca_endm)
-            inclinds(5:(4+length(outputs.endm.Full.init.datalist_endm))) = NaN;
-        else
-            inclinds(5) = NaN;
-        end
+        % if strcmp('endm',fldnames{k}) && (length(outputs.endm.Full.init.datalist_endm)>1)  && ...
+        %         ~logical(outputs.endm.Full.init.datapca_endm)
+        %     inclinds(5:(4+length(outputs.endm.Full.init.datalist_endm))) = NaN;
+        % else
+        %     inclinds(5) = NaN;
+        % end
         params = params(~isnan(inclinds));
-        if strcmp('ndm',fldnames{k}) && ismember('endm',fldnames) && ...
+        if strcmp('nexis_global',fldnames{k}) && ismember('endm',fldnames) && ...
                 (length(outputs.endm.Full.init.datalist_endm)>1) && ...
                 ~logical(outputs.endm.Full.init.datapca_endm)
             params = [params, zeros(1,2*(length(outputs.endm.Full.init.datalist_endm)-1))];
@@ -152,15 +155,15 @@ for k = 1:length(rownames)
         if ~logical(outputs.(fldnames{k}).Full.init.w_dir)
             inclinds(4) = NaN;
         end
-        if strcmp('endm',fldnames{k}) && (length(outputs.endm.Full.init.datalist_endm)>1)  && ...
-                ~logical(outputs.endm.Full.init.datapca_endm)
-            inclinds(5:(4+length(outputs.endm.Full.init.datalist_endm))) = NaN;
-        else
-            inclinds(5) = NaN;
-        end
+        % if strcmp('endm',fldnames{k}) && (length(outputs.endm.Full.init.datalist_endm)>1)  && ...
+        %         ~logical(outputs.endm.Full.init.datapca_endm)
+        %     inclinds(5:(4+length(outputs.endm.Full.init.datalist_endm))) = NaN;
+        % else
+        %     inclinds(5) = NaN;
+        % end
         params_mean = params_mean(~isnan(inclinds)); 
         params_ci95 = params_ci95(:,~isnan(inclinds));
-        if strcmp('ndm',fldnames{k}) && ismember('endm',fldnames) &&...
+        if strcmp('nexis_global',fldnames{k}) && ismember('endm',fldnames) &&...
                 (length(outputs.endm.Full.init.datalist_endm)>1) &&...
                 ~logical(outputs.endm.Full.init.datapca_endm)
             params_mean = [params_mean, zeros(1,2*(length(outputs.endm.Full.init.datalist_endm)-1))];
@@ -171,7 +174,6 @@ for k = 1:length(rownames)
             summarytable{k,index} = {params_ci95(:,i).'}; index = index + 1;
         end
     end
-    ts = outputs.(fldnames{1}).Full.time_stamps;
     for i = 1:length(ts)
         summarytable{k,index} = outputs.(fldnames{k}).Full.results.Corrs(i); index = index + 1;       
     end
