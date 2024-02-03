@@ -1,6 +1,9 @@
 %% 0. Loading data
 rng(0); clear; clc; close all;
 matdir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Nexis/raw_data_mouse';
+figdir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Figures/TauDirectionality';
+output_dir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Nexis/TauDirectionality_Related/Results_Tables';
+filename_out = 'outputs_all';
 load([matdir filesep 'Connectomes.mat'],'Connectomes');
 load([matdir filesep 'Mouse_Tauopathy_Data_HigherQ.mat'],'mousedata_struct')
 
@@ -33,8 +36,6 @@ L_ant = sum(C_ant) - C_ant;
 
 %% 2. NexIS:global w/directionality modeling
 %% 2.1 Longitudinal models
-output_dir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Nexis/TauDirectionality_Related/Results_Tables';
-filename_out = 'outputs_all';
 saveoutputs = 1;
 outputs_all = struct;
 ub = [Inf,Inf,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
@@ -65,6 +66,14 @@ end
 if saveoutputs
     save([output_dir filesep filename_out '.mat'],'outputs_all');
 end
+
+%% 2.2 Figures per 2.1
+preload = 1;
+if preload
+    load([output_dir filesep filename_out '.mat'],'outputs_all');
+end
+CompareDirPlots(outputs_all,0,'R2')
+CompareDirPlots(outputs_all,0,'R')
 
 %% 2.2 Per-timepoint models
 
@@ -223,18 +232,18 @@ set(gca,'FontSize',16,'yscale','log');
 % legend(legcell,'Location','southeast');
 % set(gca,'FontSize',20,'xscale','log');
 
-%% S1. Functions
-    function L = genLplcns(mat)
-    
-        Dr = sum(mat,2);
-        Dc = sum(mat,1);
-        small = find(Dr < 0.05 * mean(Dr));
-        Dr(small(:)) = 0.05 * mean(Dr);
-        small = find(Dc < 0.05 * mean(Dc));
-        Dc(small(:)) = 0.05 * mean(Dc);
-        Dr = diag(Dr);
-        Dc = diag(Dc);
-        
-        L = eye(size(mat)) - ((Dr^-(1/2)) * mat * (Dc^-(1/2)));
-    end
-
+% %% S1. Functions
+%     function L = genLplcns(mat)
+% 
+%         Dr = sum(mat,2);
+%         Dc = sum(mat,1);
+%         small = find(Dr < 0.05 * mean(Dr));
+%         Dr(small(:)) = 0.05 * mean(Dr);
+%         small = find(Dc < 0.05 * mean(Dc));
+%         Dc(small(:)) = 0.05 * mean(Dc);
+%         Dr = diag(Dr);
+%         Dc = diag(Dc);
+% 
+%         L = eye(size(mat)) - ((Dr^-(1/2)) * mat * (Dc^-(1/2)));
+%     end
+% 
