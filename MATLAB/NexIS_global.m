@@ -20,7 +20,7 @@ volcorrect_ = 1;
 exclseed_costfun_ = 0;
 excltpts_costfun_ = [];
 logtrans_ = 'none';
-normtype_ = 'sum';
+normtype_ = 'mean';
 Cnormtype_ = 'minmax';
 w_dir_ = 0; 
 param_init_ = [NaN,0.5,1,0.5]; 
@@ -192,27 +192,38 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     [param_num, fval_num] = fmincon(objfun_handle,param_init,[],[],[],[],lb,ub,[],options);
 
     % Solve NexIS global with the optimal parameters
+    tinds = setdiff(1:length(time_stamps), ipR.excltpts_costfun);
     ynum = NexIS_fun(C,U,time_stamps,seed_location,param_num,ipR.solvetype,ipR.volcorrect,ipR.matdir);
     
     % Store all outputs
     if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) % Convert back to data space
-        pathology = CCFToData(pathology,ipR.study,ipR.matdir);
+        pathology = CCFToData(pathology(:,tinds),ipR.study,ipR.matdir);
         pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
-        ynum = CCFToData(ynum,ipR.study,ipR.matdir);
+        ynum = CCFToData(ynum(:,tinds),ipR.study,ipR.matdir);
+        baseline = pathology_orig(:,1);
         if isnan(seed426.(ipR.study))
             seed_save = NaN;
-            ynum_save = [pathology_orig(:,1), ynum]; % save ynum with baseline to keep consistent with pathology_orig
         else
             seed_save = CCFToData(seed_location,ipR.study,ipR.matdir);
-            ynum_save = ynum;
         end
     else
-        seed_save = seed_location;
-        ynum_save = ynum;
+        if isnan(seed426.(ipR.study))
+            seed_save = NaN;
+        else
+            seed_save = seed_location;
+        end
+        baseline = pathology_orig(:,1);
+        pathology = pathology(:,tinds);
+        ynum = ynum(:,tinds);
     end
-    outputs.nexis_global.Full.data = pathology_orig; % this has been normalized
-    outputs.nexis_global.Full.time_stamps = time_stamps_orig;
-    outputs.nexis_global.Full.predicted = ynum_save;
+    outputs.nexis_global.Full.data = pathology; % this has been normalized
+    outputs.nexis_global.Full.baseline = baseline; % this has been normalized
+    if isnan(seed426.(ipR.study))
+        outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
+    else
+        outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds);
+    end
+    outputs.nexis_global.Full.predicted = ynum;
     outputs.nexis_global.Full.param_fit = param_num;
     outputs.nexis_global.Full.fval = fval_num;
     outputs.nexis_global.Full.init.seed = seed_save;
@@ -242,8 +253,8 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     outputs.nexis_global.Full.fmincon.max_evaluations = ipR.maxeval;
     
     % Calculate per-timepoint R values
-    Rvalues = zeros(1,length(time_stamps));
-    for jj = 1:length(time_stamps)
+    Rvalues = zeros(1,length(tinds));
+    for jj = 1:length(tinds)
         Rvalues(jj) = corr(ynum(:,jj),pathology(:,jj),'rows','complete');
     end
     outputs.nexis_global.Full.results.Corrs = Rvalues;

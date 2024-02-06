@@ -2,8 +2,7 @@
 rng(0); clear; clc; close all;
 matdir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Nexis/raw_data_mouse';
 figdir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Figures/TauDirectionality';
-output_dir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Nexis/TauDirectionality_Related/Results_Tables';
-filename_out = 'outputs_all';
+output_dir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Results_Tables_TauDir';
 load([matdir filesep 'Connectomes.mat'],'Connectomes');
 load([matdir filesep 'Mouse_Tauopathy_Data_HigherQ.mat'],'mousedata_struct')
 
@@ -16,6 +15,7 @@ C_nd = (C_nd - diag(diag(C_nd)));
 
 % Study names
 studynames = fieldnames(mousedata_struct);
+studynames(ismember(studynames,'IbaP301S')) = []; % Remove this study 
 
 % Non-default NexIS parameters
 bootstrapping = 0;
@@ -37,6 +37,7 @@ L_ant = sum(C_ant) - C_ant;
 %% 2. NexIS:global w/directionality modeling
 %% 2.1 Longitudinal models
 saveoutputs = 1;
+filename_out = 'outputs_all';
 outputs_all = struct;
 ub = [Inf,Inf,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
 lb = zeros(1,4); lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
@@ -69,16 +70,66 @@ end
 
 %% 2.2 Figures per 2.1
 preload = 1;
+filename_out = 'outputs_all';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
-CompareDirPlots(outputs_all,0,'R2')
-CompareDirPlots(outputs_all,0,'R')
+% CompareDirPlots(outputs_all,0,'R2');
+CompareDirPlots(outputs_all,0,'R');
 
-%% 2.2 Per-timepoint models
+%% 2.3.1 Per-timepoint models, R cost function
+saveoutputs = 1;
+outputs_all_tpt = struct;
+filename_out = 'outputs_all_tpt';
+ub = [1,0,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
+lb = [1,0,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
+modelnames = {'fit_s','ret','ant','nd'};
+costfun = 'rval_sum';
+excl_tpts = [[2,3];[1,3];[1,2]];
+for i = 1:length(studynames)
+    tablename = [filename_out '_' studynames{i}];
+    sumtable = [];
+    for j = 1:length(modelnames)
+        fprintf('Study %d of %d, Model %s\n',i,length(studynames),modelnames{j})
+        for k = 1:size(excl_tpts,1)
+            fprintf('Timepoint %d of %d\n',k,size(excl_tpts,1))
+            excl_tpt = excl_tpts(k,:);
+            tpt_str = ['t_' num2str(setdiff(1:3,excl_tpt))];
+            outputs = NexIS_global('study',studynames{i},...
+                                    'w_dir',w_dir,...
+                                    'volcorrect',volcorrect,...
+                                    'param_init',param_init,...
+                                    'ub',ubs(j,:),...
+                                    'lb',lbs(j,:),...
+                                    'use_dataspace',use_dataspace,...
+                                    'bootstrapping',bootstrapping,...
+                                    'costfun',costfun,...
+                                    'excltpts_costfun',excl_tpt);
+            outputs_all_tpt.(studynames{i}).(modelnames{j}).(tpt_str) = outputs;
+            sumtable_i = Output2Table(outputs,0,'null','null');
+            sumtable_i.Properties.RowNames{1} = [modelnames{j} ', ' tpt_str];
+            sumtable_i.Properties.VariableNames{16} = 'R';
+            sumtable = [sumtable; sumtable_i];
+        end
+    end
+    if saveoutputs
+        writetable(sumtable,[output_dir filesep tablename '.csv'],'WriteRowNames',true)
+    end
+end
+if saveoutputs
+    save([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
+end
 
+%% 2.4
+preload = 1;
+filename_out = 'outputs_all_tpt';
+if preload
+    load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
+end
+% CompareDirPlots(outputs_all_tpt,1,'R2');
+Rmat = CompareDirPlots(outputs_all_tpt,1,'R');
 
-% %% 4. Figure 2, model
+%% 4. Figure 2, model
 % studyname = 'IbaHippInj';
 % rescale = 'log';
 % tvec = [0,mousedata_struct.(studyname).time_stamps];
