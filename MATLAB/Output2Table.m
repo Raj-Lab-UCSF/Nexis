@@ -69,9 +69,9 @@ else
 end
 
 ts = outputs.(fldnames{1}).Full.time_stamps;
-if isnan(outputs.(fldnames{1}).Full.init.seed)
-    ts = ts(2:end);
-end
+% if isnan(outputs.(fldnames{1}).Full.init.seed)
+%     ts = ts(2:end);
+% end
 for i = 1:length(ts)
     columnnames{end+1} = sprintf('R, t = %d',ts(i)); vartypes{end+1} = 'double';
 end

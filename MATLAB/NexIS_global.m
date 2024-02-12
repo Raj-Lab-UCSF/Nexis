@@ -20,7 +20,7 @@ volcorrect_ = 1;
 exclseed_costfun_ = 0;
 excltpts_costfun_ = [];
 logtrans_ = 'none';
-normtype_ = 'mean';
+normtype_ = 'sum';
 Cnormtype_ = 'minmax';
 w_dir_ = 0; 
 param_init_ = [NaN,0.5,1,0.5]; 
@@ -111,6 +111,9 @@ if isempty(ipR.C) && ~strcmp(ipR.study,'User-specified')
         seed426 = struct; seed426.(ipR.study) = mousedata_struct.(ipR.study).seed;
         tpts = struct; tpts.(ipR.study) = mousedata_struct.(ipR.study).time_stamps;
         C = Connectomes.default;
+        if strcmp(ipR.study(1:2),'DS')
+            tpts.(ipR.study) = tpts.(ipR.study)/4; % weeks to months for Kaufman studies
+        end
     end
 else
     data426 = struct; tpts = struct; seed426 = struct;
