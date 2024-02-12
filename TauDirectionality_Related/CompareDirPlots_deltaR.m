@@ -1,4 +1,4 @@
-function Rmat = CompareDirPlots_deltaR(outstruct,pertimepoint,RvR2)
+function Rmat = CompareDirPlots_deltaR(outstruct,pertimepoint)
     
     rng(0);
     studynames = fieldnames(outstruct);

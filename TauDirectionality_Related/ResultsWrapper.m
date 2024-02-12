@@ -82,8 +82,9 @@ filename_out = 'outputs_all';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
-CompareDirPlots_deltaR(outputs_all,0,'R');
+CompareDirPlots_deltaR(outputs_all,0);
 CompareDirPlots_s(outputs_all,0);
+CorrComparePlot(outputs_all,0);
 
 %% 2.3.1 Per-timepoint models, Lin R cost function, fix gamma and alpha
 saveoutputs = 1;
@@ -136,11 +137,12 @@ filename_out = 'outputs_all_tpt_fixgammaalpha';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
 end
-CompareDirPlots_deltaR(outputs_all_tpt,1,'R');
+CompareDirPlots_deltaR(outputs_all_tpt,1);
 [~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
 for i = 1:2
     PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
 end
+CorrComparePlot(outputs_all_tpt,1);
 
 %% 4. Figure 2, model
 % studyname = 'IbaHippInj';
