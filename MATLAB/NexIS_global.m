@@ -637,6 +637,15 @@ end
     function normdata = normalizer(data,ntype)
         if strcmp(ntype,'sum')
             normdata = data/sum(data(:,1),'omitnan');
+        elseif strcmp(ntype,'masssum')
+            load([ipR.matdir filesep 'DefaultAtlas.mat'], 'DefaultAtlas');
+            voxels_2hem = DefaultAtlas.volumes;
+            data_1 = data(:,1);
+            nonnans = isnan(data_1);
+            data_1(nonnans) = [];
+            voxels_2hem(nonnans) = [];
+            masssum = data_1.' * voxels_2hem;
+            normdata = data / masssum;
         elseif strcmp(ntype,'mean')
             normdata = data/mean(data(:,1),'omitnan');
         elseif strcmp(ntype,'norm2')

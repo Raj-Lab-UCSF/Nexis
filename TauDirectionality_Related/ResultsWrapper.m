@@ -40,17 +40,17 @@ L_ant = sum(C_ant) - C_ant;
 
 %% 2.1 Longitudinal models
 saveoutputs = 1;
-filename_out = 'outputs_all';
+filename_out = 'outputs_all_massnorm';
 outputs_all = struct;
 modelnames = {'fit_s','ret','ant','nd'};
 for i = 1:length(studynames)
     tablename = [filename_out '_' studynames{i}];
     sumtable = [];
-    if ~isnan(mousedata_struct.(studynames{i}).seed)
-        gammaval = 1/(sum(mousedata_struct.(studynames{i}).seed));
-    else
-        gammaval = 1;
-    end
+    % if ~isnan(mousedata_struct.(studynames{i}).seed)
+    %     gammaval = 1/(sum(mousedata_struct.(studynames{i}).seed));
+    % else
+    %     gammaval = 1;
+    % end
     ub = [Inf,Inf,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
     lb = [0,0,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
     for j = 1:length(modelnames)
@@ -62,7 +62,8 @@ for i = 1:length(studynames)
                                 'ub',ubs(j,:),...
                                 'lb',lbs(j,:),...
                                 'use_dataspace',use_dataspace,...
-                                'bootstrapping',bootstrapping);
+                                'bootstrapping',bootstrapping,...
+                                'normtype','masssum');
         outputs_all.(studynames{i}).(modelnames{j}) = outputs;
         sumtable_i = Output2Table(outputs,0,'null','null');
         sumtable_i.Properties.RowNames{1} = modelnames{j};
@@ -78,7 +79,7 @@ end
 
 %% 2.2 Figures per 2.1
 preload = 1;
-filename_out = 'outputs_all';
+filename_out = 'outputs_all_massnorm';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
@@ -89,7 +90,7 @@ CorrComparePlot(outputs_all,0);
 %% 2.3.1 Per-timepoint models, Lin R cost function, fix gamma and alpha
 saveoutputs = 1;
 outputs_all_tpt = struct;
-filename_out = 'outputs_all_tpt_fixgammaalpha';
+filename_out = 'outputs_all_tpt_massnorm';
 modelnames = {'fit_s','ret','ant','nd'};
 costfun = 'linr';
 excl_tpts = [[2,3];[1,3];[1,2]];
@@ -115,7 +116,8 @@ for i = 1:length(studynames)
                                     'use_dataspace',use_dataspace,...
                                     'bootstrapping',bootstrapping,...
                                     'costfun',costfun,...
-                                    'excltpts_costfun',excl_tpt);
+                                    'excltpts_costfun',excl_tpt,...
+                                    'normtype','massnorm');
             outputs_all_tpt.(studynames{i}).(modelnames{j}).(tpt_str) = outputs;
             sumtable_i = Output2Table(outputs,0,'null','null');
             sumtable_i.Properties.RowNames{1} = [modelnames{j} ', ' tpt_str];
@@ -133,7 +135,7 @@ end
 
 %% 2.4 Figures per 2.3
 preload = 1;
-filename_out = 'outputs_all_tpt_fixgammaalpha';
+filename_out = 'outputs_all_tpt_massnorm';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
 end
