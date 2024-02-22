@@ -72,6 +72,7 @@ if logical(volcorrect_)
 else
     voxels_2hem = ones(size(L,1),1);
 end
+% L = L * mean(voxels_2hem) * diag(voxels_2hem.^(-1)); % Ashish's modification?
 L = mean(voxels_2hem) * diag(voxels_2hem.^(-1)) * L; % correction proposed by Putra et al. 2021
 
 % define system dydt = Ax

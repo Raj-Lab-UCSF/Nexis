@@ -4,7 +4,6 @@ function CorrComparePlot(outstruct,pertimepoint)
     studynames(ismember(studynames,'IbaP301S')) = []; %exclude IbaP301S for too few datapoints
     studylabels = cellfun(@(x)strrep(x,'_',' '),studynames,'UniformOutput',0);
     modelnames = fieldnames(outstruct.(studynames{1}));
-    isadl = ismember(studynames,{'BoludaDSAD','DS4','Hurtado'});    
 
     if ~pertimepoint
         Rmat = NaN(length(studynames),length(modelnames)); % 4 models
@@ -16,22 +15,38 @@ function CorrComparePlot(outstruct,pertimepoint)
                 Rmat(i,j) = corr(datavec,predvec,'rows','complete');
             end
         end
-        shapes = {'o','s','d','^'};
-        cmap = hsv(length(studynames));
+        % shapes = {'o','s','d','^'};
+        % cmap = hsv(length(studynames));
+        % xpos = 1:length(studynames); g = xpos;
+        % offsets = [-0.3,-0.1,0.1,0.3];
+        % figure('Units','inches','Position',[0 0 15 8]); hold on;
+        % legstr = []; xlabs = cell(1,length(xpos));
+        % for i = 1:length(shapes)
+        %     gplot1 = gscatter((xpos.' + offsets(i)),Rmat(:,i),g,zeros(size(cmap)),shapes{i},7,'doleg','off');
+        %     gplot2 = gscatter((xpos.' + offsets(i)),Rmat(:,i),g,cmap,shapes{i},7,'doleg','off');
+        %     for j = xpos
+        %         col = cmap(j,:);
+        %         gplot1(j).MarkerFaceColor = [0 0 0];
+        %         gplot2(j).MarkerFaceColor = col;
+        %         xlabs{j} = sprintf('\\color[rgb]{%f,%f,%f}%s',col(1),col(2),col(3),studylabels{j});
+        %     end
+        %     legstr = [legstr gplot1(1)];
+        % end
+        shapes = {'o','s','d','^','v','<','>','p','h','+','x'};
+        cmap = hsv(length(modelnames));
         xpos = 1:length(studynames); g = xpos;
         offsets = [-0.3,-0.1,0.1,0.3];
         figure('Units','inches','Position',[0 0 15 8]); hold on;
         legstr = []; xlabs = cell(1,length(xpos));
-        for i = 1:length(shapes)
-            gplot1 = gscatter((xpos.' + offsets(i)),Rmat(:,i),g,zeros(size(cmap)),shapes{i},7,'doleg','off');
-            gplot2 = gscatter((xpos.' + offsets(i)),Rmat(:,i),g,cmap,shapes{i},7,'doleg','off');
+        for i = 1:length(modelnames)
+            gplot = gscatter((xpos.' + offsets(i)),Rmat(:,i),g,...
+                repmat(cmap(i,:),length(xpos),1),shapes,7,'doleg','off');
             for j = xpos
-                col = cmap(j,:);
-                gplot1(j).MarkerFaceColor = [0 0 0];
-                gplot2(j).MarkerFaceColor = col;
-                xlabs{j} = sprintf('\\color[rgb]{%f,%f,%f}%s',col(1),col(2),col(3),studylabels{j});
+                col = cmap(i,:);
+                gplot(j).MarkerFaceColor = col;
+                xlabs{j} = studylabels{j};
             end
-            legstr = [legstr gplot1(1)];
+            legstr = [legstr gplot(1)];
         end
         xticks(xpos); xlim([min(xpos)-0.5,max(xpos)+0.5]); xticklabels(xlabs);
         xlabel([]);
@@ -39,7 +54,7 @@ function CorrComparePlot(outstruct,pertimepoint)
         ylim([yplotmin,1.1*yplotmax]); yticks([yplotmin,(yplotmin+yplotmax)/2,yplotmax]);
         yticklabels({'0',num2str((yplotmin+yplotmax)/2,'%.2f'),num2str(yplotmax,'%.2f')})
         ylabel('R'); title('Longitudinal Fit');
-        legend(legstr,{'fit s','ret','ant','nd'},'Location','southeast','NumColumns',4,'FontSize',22,'box','off')
+        legend(legstr,{'fit s','ret','ant','nd'},'Location','northeast','NumColumns',4,'FontSize',22,'box','off')
         set(gca,'FontSize',26,'FontName','Times');
 
     else
@@ -57,11 +72,10 @@ function CorrComparePlot(outstruct,pertimepoint)
                 end
             end
         end
-
-        shapes = {'o','s','d','^'};
-        cmap = hsv(length(studynames));
-        cmapfull = NaN(size(cmap,1)*length(tptnames),3);
-        Rvecs = NaN(size(cmap,1)*length(tptnames),length(modelnames));
+        shapes = {'o','s','d','^','v','<','>','p','h','+','x'};
+        cmap = hsv(length(modelnames));
+        cmapfull = NaN(length(shapes)*length(tptnames),3);
+        Rvecs = NaN(length(shapes)*length(tptnames),length(modelnames));
         for i = 1:size(cmap,1)
             inds = (1:length(tptnames)) + (i-1)*length(tptnames);
             cmapfull(inds,:) = repmat(cmap(i,:),length(tptnames),1);
@@ -77,16 +91,15 @@ function CorrComparePlot(outstruct,pertimepoint)
         offsets = [-0.3,-0.1,0.1,0.3];
         figure('Units','inches','Position',[0 0 15 8]); hold on;
         legstr = []; xlabs = cell(1,length(xpos));
-        for i = 1:length(shapes)
-            gplot1 = gscatter((xposvec.' + offsets(i)),Rvecs(:,i),g,zeros(size(cmapfull)),shapes{i},7,'doleg','off');
-            gplot2 = gscatter((xposvec.' + offsets(i)),Rvecs(:,i),g,cmapfull,shapes{i},7,'doleg','off');
-            for j = 1:length(xpos)
-                col = cmap(j,:);
-                gplot1(j).MarkerFaceColor = [0 0 0];
-                gplot2(j).MarkerFaceColor = col; gplot2(j).MarkerEdgeColor = col;
-                xlabs{j} = sprintf('\\color[rgb]{%f,%f,%f}%s',col(1),col(2),col(3),studylabels{j});
+        for i = 1:length(modelnames)
+            gplot = gscatter((xposvec.' + offsets(i)),Rvecs(:,i),g,...
+                repmat(cmap(i,:),length(xposvec),1),shapes,7,'doleg','off');
+            for j = 1:length(xposvec)
+                col = cmap(i,:);
+                gplot(xposvec(j)).MarkerFaceColor = col;
+                xlabs{xposvec(j)} = studylabels{xposvec(j)};
             end
-            legstr = [legstr gplot1(1)];
+            legstr = [legstr gplot(1)];
         end
         xticks(xpos); xlim([min(xposvec)-0.5,max(xposvec)+0.5]); xticklabels(xlabs);
         xlabel([]);
@@ -94,7 +107,7 @@ function CorrComparePlot(outstruct,pertimepoint)
         ylim([yplotmin,1.1*yplotmax]); yticks([yplotmin,(yplotmin+yplotmax)/2,yplotmax]);
         yticklabels({'0',num2str((yplotmin+yplotmax)/2,'%.2f'),num2str(yplotmax,'%.2f')})
         ylabel('R'); title('Per Timepoint');
-        legend(legstr,{'fit s','ret','ant','nd'},'Location','southeast','NumColumns',4,'FontSize',22,'box','off')
+        legend(legstr,{'fit s','ret','ant','nd'},'Location','northeast','NumColumns',4,'FontSize',22,'box','off')
         set(gca,'FontSize',26,'FontName','Times');
         % figure; hold on;
         % cmap_boxplot = [[1 0 0]; [0 0 1]];

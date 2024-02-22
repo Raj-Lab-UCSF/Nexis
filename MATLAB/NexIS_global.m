@@ -140,14 +140,22 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
-        if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
-            seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
-        else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
-            seed_location = pathology(:,1);
-            pathology = pathology(:,2:end);
-            time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
-            ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
-        end
+        
+        % baseline test start
+        % if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
+        %     seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
+        % else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
+        %     seed_location = pathology(:,1);
+        %     pathology = pathology(:,2:end);
+        %     time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+        %     ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+        % end
+        seed_location = pathology(:,1); 
+        pathology = pathology(:,2:end);
+        time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+        ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+        % baseline test end
+
     else % Use pathology and seed as is
         pathology_raw = data426.(ipR.study);
         seed_location = seed426.(ipR.study);
@@ -221,11 +229,16 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     end
     outputs.nexis_global.Full.data = pathology; % this has been normalized
     outputs.nexis_global.Full.baseline = baseline; % this has been normalized
-    if isnan(seed426.(ipR.study))
-        outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
-    else
-        outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds);
-    end
+
+    % baseline test start
+    % if isnan(seed426.(ipR.study))
+    %     outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
+    % else
+    %     outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds);
+    % end
+    outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
+    %baseline test end
+
     outputs.nexis_global.Full.predicted = ynum;
     outputs.nexis_global.Full.param_fit = param_num;
     outputs.nexis_global.Full.fval = fval_num;

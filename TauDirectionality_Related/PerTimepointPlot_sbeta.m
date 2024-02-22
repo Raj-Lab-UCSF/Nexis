@@ -29,10 +29,10 @@ function PerTimepointPlot_sbeta(outstruct,usebeta)
     
     cmap = hsv(length(studynames));
     shapes = {'o','s','d','^','v','<','>','p','h','+','x'};
-    figure('Units','inches','Position',[0 0 10 10]); hold on;
+    figure('Units','inches','Position',[0 0 11 10]); hold on;
     plothands = {};
     for i = 1:length(studynames)
-        plot(tpts(i,:),sbetavals(i,:),'LineStyle','-','Color',cmap(i,:));
+        plot(tpts(i,:),sbetavals(i,:),'LineStyle','none','Color',cmap(i,:));
         s = scatter(tpts(i,:),sbetavals(i,:),75,shapes{i},...
             'MarkerFaceColor',cmap(i,:),'MarkerEdgeColor',cmap(i,:),...
             'MarkerFaceAlpha',0.3);

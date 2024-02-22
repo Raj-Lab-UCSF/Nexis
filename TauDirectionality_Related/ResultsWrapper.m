@@ -40,7 +40,7 @@ L_ant = sum(C_ant) - C_ant;
 
 %% 2.1 Longitudinal models
 saveoutputs = 1;
-filename_out = 'outputs_all_massnorm';
+filename_out = 'outputs_all_baseline';
 outputs_all = struct;
 modelnames = {'fit_s','ret','ant','nd'};
 for i = 1:length(studynames)
@@ -62,8 +62,7 @@ for i = 1:length(studynames)
                                 'ub',ubs(j,:),...
                                 'lb',lbs(j,:),...
                                 'use_dataspace',use_dataspace,...
-                                'bootstrapping',bootstrapping,...
-                                'normtype','masssum');
+                                'bootstrapping',bootstrapping);
         outputs_all.(studynames{i}).(modelnames{j}) = outputs;
         sumtable_i = Output2Table(outputs,0,'null','null');
         sumtable_i.Properties.RowNames{1} = modelnames{j};
@@ -79,7 +78,7 @@ end
 
 %% 2.2 Figures per 2.1
 preload = 1;
-filename_out = 'outputs_all_massnorm';
+filename_out = 'outputs_all_revvol';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
@@ -90,10 +89,10 @@ CorrComparePlot(outputs_all,0);
 %% 2.3.1 Per-timepoint models, Lin R cost function, fix gamma and alpha
 saveoutputs = 1;
 outputs_all_tpt = struct;
-filename_out = 'outputs_all_tpt_massnorm';
+filename_out = 'outputs_all_tpt_fixgammaalpha_baseline';
 modelnames = {'fit_s','ret','ant','nd'};
 costfun = 'linr';
-excl_tpts = [[2,3];[1,3];[1,2]];
+% excl_tpts = [[2,3];[1,3];[1,2]];
 for i = 1:length(studynames)
     tablename = [filename_out '_' studynames{i}];
     sumtable = [];
@@ -103,10 +102,20 @@ for i = 1:length(studynames)
         gammaval = params_opt(1); alphaval = params_opt(2);
         ub = [gammaval,alphaval,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
         lb = [gammaval,alphaval,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
+        if strcmp(studynames{i},'Hurtado')
+            excl_tpts = [[2,3];[1,3];[1,2]];
+        else
+            excl_tpts = [2; 1];
+        end
         for k = 1:size(excl_tpts,1)
             fprintf('Timepoint %d of %d\n',k,size(excl_tpts,1))
             excl_tpt = excl_tpts(k,:);
-            tpt_str = ['t_' num2str(setdiff(1:3,excl_tpt))];
+            % tpt_str = ['t_' num2str(setdiff(1:3,excl_tpt))];
+            if strcmp(studynames{i},'Hurtado')
+                tpt_str = ['t_' num2str(setdiff(1:3,excl_tpt))];
+            else
+                tpt_str = ['t_' num2str(setdiff(1:2,excl_tpt))];
+            end
             outputs = NexIS_global('study',studynames{i},...
                                     'w_dir',w_dir,...
                                     'volcorrect',volcorrect,...
@@ -116,8 +125,7 @@ for i = 1:length(studynames)
                                     'use_dataspace',use_dataspace,...
                                     'bootstrapping',bootstrapping,...
                                     'costfun',costfun,...
-                                    'excltpts_costfun',excl_tpt,...
-                                    'normtype','massnorm');
+                                    'excltpts_costfun',excl_tpt);
             outputs_all_tpt.(studynames{i}).(modelnames{j}).(tpt_str) = outputs;
             sumtable_i = Output2Table(outputs,0,'null','null');
             sumtable_i.Properties.RowNames{1} = [modelnames{j} ', ' tpt_str];
@@ -135,7 +143,7 @@ end
 
 %% 2.4 Figures per 2.3
 preload = 1;
-filename_out = 'outputs_all_tpt_massnorm';
+filename_out = 'outputs_all_tpt_fixgammaalpha';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
 end
