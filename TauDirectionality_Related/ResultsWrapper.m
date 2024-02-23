@@ -147,12 +147,13 @@ filename_out = 'outputs_all_tpt_fixgammaalpha';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
 end
-CompareDirPlots_deltaR(outputs_all_tpt,1);
-[~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
+% CompareDirPlots_deltaR(outputs_all_tpt,1);
+% [~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
 for i = 1:2
-    PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
+    % PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
+    DirectionalityVsTimePlot(outputs_all_tpt,i-1)
 end
-CorrComparePlot(outputs_all_tpt,1);
+% CorrComparePlot(outputs_all_tpt,1);
 
 %% 4. Figure 2, model
 % studyname = 'IbaHippInj';
