@@ -49,7 +49,7 @@ resample_rate_nexis_sv_ = 0.8;
 niters_nexis_sv_ = 100;
 verbose_nexis_sv_ = 0;
 fmindisplay_nexis_sv_ = 0;
-datatype_nexis_sv_ = 'gene'; % 'gene', 'ct_tasic', 'ct_zeisel'
+datatype_nexis_sv_ = 'gene'; % 'gene', 'ct_tasic', 'ct_zeisel', 'ct_yao'
 datalist_nexis_sv_ = 3578; % index for Trem2
 datapca_nexis_sv_ = 0;
 flowthresh_ = 99.93;
@@ -256,15 +256,13 @@ U = (U - minU) ./ (maxU - minU);
 % Solve and store results
 outputs.nexis_sv = struct;
 if ~logical(ipR.bootstrapping_nexis_sv)
-    fprintf('Creating Optimal nexis_sv Model\n');
+    fprintf('Creating Optimal NexIS:SV Model\n');
     time_stamps = tpts.(ipR.study);
     if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
         pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
-        U = DataToCCF(U,ipR.study,ipR.matdir);
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
-        
         % baseline test start
         if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
@@ -287,7 +285,9 @@ if ~logical(ipR.bootstrapping_nexis_sv)
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
     end
-
+    if any(isnan(seed_location))
+        seed_location(isnan(seed_location)) = 0;
+    end
     n_types = size(U,2);
     ndmflds = fieldnames(outputs.nexis_global);
     if length(ndmflds) == 1
@@ -331,12 +331,11 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     param_init = [param_init(1:4),zeros(1,n_types),zeros(1,n_types)];
     lb = [lb(1:4),-Inf(1,n_types),-Inf(1,n_types)];
     ub = [ub(1:4),Inf(1,n_types),Inf(1,n_types)];
-    
     objfun_handle = @(param) CostFunction_NexIS(param,C,U,time_stamps,...
         seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.costfun,...
         ipR.excltpts_costfun,ipR.exclseed_costfun,ipR.use_dataspace,ipR.study,...
         ipR.logtrans,ipR.lambda,ipR.matdir);
-    if logical(ipR.fmindisplay)
+    if logical(ipR.fmindisplay_nexis_sv)
         options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
             'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
             'FunctionTolerance',ipR.fxntol,'StepTolerance',ipR.steptol);
