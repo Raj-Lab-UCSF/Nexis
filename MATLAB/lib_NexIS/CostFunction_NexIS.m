@@ -9,13 +9,14 @@
 
 function f = CostFunction_NexIS(params_,C_,U_,time_stamps_,seed_,pathol_,...
     solvetype_,volcorrect_,costfun_,excltpts_costfun_,exclseed_costfun_,...
-    use_dataspace_,studyname_,logtrans_,matdir_)
+    use_dataspace_,studyname_,logtrans_,lambdaval_,matdir_)
 
 LinRcalc = @(x,y) 2*corr(x,y)*std(x)*std(y)/(std(x)^2 + std(y)^2 + (mean(x) - mean(y))^2);
 
 ts = time_stamps_;
 pathology = pathol_;
 seedregs = seed_;
+s_ = params_(4);
 
 % Calculate predictions y with NexIS
 predicted = NexIS_fun(C_,U_,ts,seedregs,params_,solvetype_,volcorrect_,matdir_);
@@ -102,6 +103,8 @@ switch costfun_
         f = 1 - corr(predicted_vec(timeinds == end_ind),pathology_vec(timeinds == end_ind));
     case 'linr'
         f = 1 - LinRcalc(predicted_vec,pathology_vec);
+    case 'linr_reg_s'
+        f = 1 - LinRcalc(predicted_vec,pathology_vec) + lambdaval_*abs(s_ - 0.5);
     case 'linr_sum'
         Rvalues = zeros(1,length(ts));
         for i = 1:length(ts)

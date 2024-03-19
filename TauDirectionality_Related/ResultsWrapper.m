@@ -1,5 +1,6 @@
 %% 0. Loading data
 rng(0); clear; clc; close all;
+codedir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Nexis'; cd(codedir);
 matdir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Nexis/raw_data_mouse';
 figdir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Figures/TauDirectionality';
 output_dir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Results_Tables_TauDir';
@@ -37,6 +38,40 @@ L_ant = sum(C_ant) - C_ant;
 %% 2. NexIS:global w/directionality modeling
 % fit longitudinally alpha/beta/s (if fit_s)
 % fix gamma and alpha for per-timepoint, use LinR
+%% 2.05 Testing
+saveoutputs = 1;
+filename_out = 'outputs_all_test';
+outputs_all = struct;
+modelnames = {'fit_s'};
+% modelnames = {'fit_s','ret','ant','nd'};
+for i = 1:length(studynames)
+    tablename = [filename_out '_' studynames{i}];
+    sumtable = [];
+    ub = [Inf,Inf,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
+    lb = [0,0,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
+    for j = 1:length(modelnames)
+        fprintf('Study %d of %d, Model %s\n',i,length(studynames),modelnames{j})
+        outputs = NexIS_global('study',studynames{i},...
+                                'w_dir',w_dir,...
+                                'volcorrect',volcorrect,...
+                                'param_init',param_init,...
+                                'ub',ubs(j,:),...
+                                'lb',lbs(j,:),...
+                                'use_dataspace',use_dataspace,...
+                                'bootstrapping',bootstrapping);
+        outputs_all.(studynames{i}).(modelnames{j}) = outputs;
+        sumtable_i = Output2Table(outputs,0,'null','null');
+        sumtable_i.Properties.RowNames{1} = modelnames{j};
+        sumtable = [sumtable; sumtable_i];
+    end
+    % if saveoutputs
+    %     writetable(sumtable,[output_dir filesep tablename '.csv'],'WriteRowNames',true)
+    % end
+end
+if saveoutputs
+    save([output_dir filesep filename_out '.mat'],'outputs_all');
+end
+
 
 %% 2.1 Longitudinal models
 saveoutputs = 1;
@@ -78,12 +113,12 @@ end
 
 %% 2.2 Figures per 2.1
 preload = 1;
-filename_out = 'outputs_all_revvol';
+filename_out = 'outputs_all';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
-CompareDirPlots_deltaR(outputs_all,0);
-CompareDirPlots_s(outputs_all,0);
+% CompareDirPlots_deltaR(outputs_all,0);
+% CompareDirPlots_s(outputs_all,0);
 CorrComparePlot(outputs_all,0);
 
 %% 2.3.1 Per-timepoint models, Lin R cost function, fix gamma and alpha
@@ -153,7 +188,110 @@ for i = 1:2
     % PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
     DirectionalityVsTimePlot(outputs_all_tpt,i-1)
 end
+CorrComparePlot(outputs_all_tpt,1);
+
+%% 2.5 All models, Lin R cost function, fix gamma and alpha, s regularization
+saveoutputs = 1;
+filename_out_all = 'outputs_all';
+preload = 1;
+if preload
+    load([output_dir filesep filename_out_all '.mat'],'outputs_all');
+end
+outputs_all_tpt = struct;
+modelnames = {'fit_s','ret','ant','nd'};
+costfun = 'linr_reg_s';
+lambdavals = 10.^(linspace(-3,0,10));
+for n = 1:length(lambdavals)
+    fprintf('Lambda %d of %d\n',n,length(lambdavals))
+    lambda = lambdavals(n);
+    filename_out = ['outputs_all_tpt_fixgammaalpha_' num2str(lambda,'%.3f')];
+    filename_out = strrep(filename_out,'.','');
+    for i = 1:length(studynames)
+        tablename = [filename_out '_' studynames{i}];
+        sumtable = [];
+        for j = 1:length(modelnames)
+            fprintf('Study %d of %d, Model %s\n',i,length(studynames),modelnames{j})
+            params_opt = outputs_all.(studynames{i}).(modelnames{j}).nexis_global.Full.param_fit;
+            gammaval = params_opt(1); alphaval = params_opt(2);
+            ub = [gammaval,alphaval,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
+            lb = [gammaval,alphaval,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
+            if strcmp(studynames{i},'Hurtado')
+                excl_tpts = [[2,3];[1,3];[1,2]];
+            else
+                excl_tpts = [2; 1];
+            end
+            for k = 1:size(excl_tpts,1)
+                fprintf('Timepoint %d of %d\n',k,size(excl_tpts,1))
+                excl_tpt = excl_tpts(k,:);
+                if strcmp(studynames{i},'Hurtado')
+                    tpt_str = ['t_' num2str(setdiff(1:3,excl_tpt))];
+                else
+                    tpt_str = ['t_' num2str(setdiff(1:2,excl_tpt))];
+                end
+                outputs = NexIS_global('study',studynames{i},...
+                                        'w_dir',w_dir,...
+                                        'volcorrect',volcorrect,...
+                                        'param_init',param_init,...
+                                        'ub',ubs(j,:),...
+                                        'lb',lbs(j,:),...
+                                        'use_dataspace',use_dataspace,...
+                                        'bootstrapping',bootstrapping,...
+                                        'costfun',costfun,...
+                                        'excltpts_costfun',excl_tpt,...
+                                        'lambda',lambda);
+                outputs_all_tpt.(studynames{i}).(modelnames{j}).(tpt_str) = outputs;
+                sumtable_i = Output2Table(outputs,0,'null','null');
+                sumtable_i.Properties.RowNames{1} = [modelnames{j} ', ' tpt_str];
+                sumtable_i.Properties.VariableNames{16} = 'R';
+                sumtable = [sumtable; sumtable_i];
+            end
+        end
+        if saveoutputs
+            writetable(sumtable,[output_dir filesep tablename '.csv'],'WriteRowNames',true)
+        end
+    end
+    if saveoutputs
+        save([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
+    end
+end
+
+%% 2.5.1 Plotting 
+% preload = 1;
+% cd(output_dir);
+% allmatfilenames = dir('*.mat');
+% outfolder_filenames = {};
+% for i = 1:length(allmatfilenames)
+%     outfolder_filenames = [outfolder_filenames, allmatfilenames(i).name];
+% end
+lambdavals = [0,10.^(linspace(-3,0,10))];
+for n = 1:length(lambdavals)
+    lambda = lambdavals(n); 
+    if lambda ~= 0
+        lambdastr = num2str(lambda,'%.3f');
+        lambdastr_ = strrep(lambdastr,'.','');
+        inputstr = ['outputs_all_tpt_fixgammaalpha_' lambdastr_];
+        file_in = load([output_dir filesep inputstr],'outputs_all_tpt');
+        titlestr = sprintf('lambda = %s',lambdastr);
+        DirectionalityVsTimePlot(file_in.outputs_all_tpt,1,titlestr)
+    else
+        inputstr = 'outputs_all_tpt_fixgammaalpha';
+        file_in = load([output_dir filesep inputstr],'outputs_all_tpt');
+        titlestr = sprintf('lambda = %d',lambda);
+        DirectionalityVsTimePlot(file_in.outputs_all_tpt,1,titlestr)        
+    end
+end
+
+% if preload
+%     load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
+% end
+% CompareDirPlots_deltaR(outputs_all_tpt,1);
+% [~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
+% for i = 1:2
+%     % PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
+%     DirectionalityVsTimePlot(outputs_all_tpt,i-1)
+% end
 % CorrComparePlot(outputs_all_tpt,1);
+
 
 %% 4. Figure 2, model
 % studyname = 'IbaHippInj';

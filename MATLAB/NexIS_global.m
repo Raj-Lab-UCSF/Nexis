@@ -15,6 +15,7 @@ use_dataspace_ = 0;
 matdir_ = [cd filesep 'raw_data_mouse'];
 
 costfun_ = 'linr'; % see /lib_NexIS/CostFunction_NexIS.m for options
+lambda_ = 0; % see /lib_NexIS/CostFunction_NexIS.m for options
 solvetype_ = 'analytic';
 volcorrect_ = 1;
 exclseed_costfun_ = 0;
@@ -53,6 +54,7 @@ addParameter(ip, 'seed', seed_);
 addParameter(ip, 'matdir', matdir_);
 addParameter(ip, 'use_dataspace', use_dataspace_, validBoolean);
 addParameter(ip, 'costfun', costfun_, validChar);
+addParameter(ip, 'lambda', lambda_, validScalar);
 addParameter(ip, 'solvetype', solvetype_, validST);
 addParameter(ip, 'volcorrect', volcorrect_, validBoolean);
 addParameter(ip, 'exclseed_costfun', exclseed_costfun_, validBoolean);
@@ -142,18 +144,18 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
         time_stamps_orig = time_stamps;
         
         % baseline test start
-        % if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
-        %     seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
-        % else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
-        %     seed_location = pathology(:,1);
-        %     pathology = pathology(:,2:end);
-        %     time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
-        %     ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
-        % end
-        seed_location = pathology(:,1); 
-        pathology = pathology(:,2:end);
-        time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
-        ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+        if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
+            seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
+        else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
+            seed_location = pathology(:,1);
+            pathology = pathology(:,2:end);
+            time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+            ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+        end
+        % seed_location = pathology(:,1); 
+        % pathology = pathology(:,2:end);
+        % time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+        % ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
         % baseline test end
 
     else % Use pathology and seed as is
@@ -190,7 +192,7 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     objfun_handle = @(param) CostFunction_NexIS(param,C,U,time_stamps,...
         seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.costfun,...
         ipR.excltpts_costfun,ipR.exclseed_costfun,ipR.use_dataspace,ipR.study,...
-        ipR.logtrans,ipR.matdir);
+        ipR.logtrans,ipR.lambda,ipR.matdir);
     if logical(ipR.fmindisplay)
         options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
             'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
@@ -231,12 +233,12 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     outputs.nexis_global.Full.baseline = baseline; % this has been normalized
 
     % baseline test start
-    % if isnan(seed426.(ipR.study))
-    %     outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
-    % else
-    %     outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds);
-    % end
-    outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
+    if isnan(seed426.(ipR.study))
+        outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
+    else
+        outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds);
+    end
+    % outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
     %baseline test end
 
     outputs.nexis_global.Full.predicted = ynum;
@@ -253,6 +255,7 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     outputs.nexis_global.Full.init.volcorrect = ipR.volcorrect;
     outputs.nexis_global.Full.init.normtype = ipR.normtype;
     outputs.nexis_global.Full.init.costfun = ipR.costfun;
+    outputs.nexis_global.Full.init.lambda = ipR.lambda;
     outputs.nexis_global.Full.init.exclseed_costfun = ipR.exclseed_costfun;
     outputs.nexis_global.Full.init.excltpts_costfun = ipR.excltpts_costfun;
     outputs.nexis_global.Full.init.w_dir = ipR.w_dir;
@@ -388,7 +391,7 @@ else % With bootstrapping of parameters
         objfun_handle = @(param) CostFunction_NexIS(param,C,U,time_stamps,...
             seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.costfun,...
             ipR.excltpts_costfun,ipR.exclseed_costfun,ipR.use_dataspace,ipR.study,...
-            ipR.logtrans,ipR.matdir);
+            ipR.logtrans,ipR.lambda,ipR.matdir);
         if logical(ipR.fmindisplay)
             options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
                 'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
@@ -450,6 +453,7 @@ else % With bootstrapping of parameters
         outputs.nexis_global.(fldname).init.volcorrect = ipR.volcorrect;
         outputs.nexis_global.(fldname).init.normtype = ipR.normtype;
         outputs.nexis_global.(fldname).init.costfun = ipR.costfun;
+        outputs.nexis_global.(fldname).init.lambda = ipR.lambda;
         outputs.nexis_global.(fldname).init.exclseed_costfun = ipR.exclseed_costfun;
         outputs.nexis_global.(fldname).init.excltpts_costfun = ipR.excltpts_costfun;
         outputs.nexis_global.(fldname).init.w_dir = ipR.w_dir;

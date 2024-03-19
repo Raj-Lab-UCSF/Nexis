@@ -4,6 +4,7 @@ import scipy as sp
 import scipy.io
 from scipy.linalg import expm
 import pandas as pd
+import torch
 
 class loading_matfiles:
     def __init__(self,datadir_=''):
@@ -48,6 +49,8 @@ class run_Nexis:
         s should be bounded between 0 and 1.
         """
         # Define parameters
+        if isinstance(parameters, torch.Tensor):
+            parameters = parameters.numpy()
         beta = parameters[0] # global diffusivity rate (range [0,5])
         if self.use_baseline:
             gamma = 1 # don't rescale baseline pathology
@@ -78,6 +81,8 @@ class run_Nexis:
                 voxels_2hem = self.region_volumes
             inv_voxels_2hem = np.diag(np.squeeze(voxels_2hem) ** (-1))
             L = np.mean(voxels_2hem) * np.dot(inv_voxels_2hem,L)
+        else:
+            L = L_raw
 
         # Define system dydt = Ax
         A = -beta * L
@@ -94,6 +99,8 @@ class run_Nexis:
         """
         # Define parameters
         ntypes = np.size(self.U,axis=1)
+        if isinstance(parameters, torch.Tensor):
+            parameters = parameters.numpy()
         alpha = parameters[0] # global connectome-independent growth (range [0,5])
         beta = parameters[1] # global diffusivity rate (range [0,5])
         if self.use_baseline:
@@ -125,10 +132,14 @@ class run_Nexis:
         
         # Apply volume correction if applicable
         if self.volcorrect:
-            regionfile = os.path.join(self.datadir,'regionvoxels.mat')
-            volmat = scipy.io.loadmat(regionfile)
-            voxels = volmat['voxels']
-            voxels_2hem = np.vstack((voxels,voxels)) / 2
+            if not self.region_volumes:
+                # 2/24/2024: This will by default load mouse brain volumes in voxels. NEED .mat of human brain volumes!
+                regionfile = os.path.join(self.datadir,'regionvoxels.mat')
+                volmat = scipy.io.loadmat(regionfile)
+                voxels = volmat['voxels']
+                voxels_2hem = np.vstack((voxels,voxels)) / 2
+            else:
+                voxels_2hem = self.region_volumes
             inv_voxels_2hem = np.diag(np.squeeze(voxels_2hem) ** (-1))
             L = np.mean(voxels_2hem) * np.dot(inv_voxels_2hem,L)
 

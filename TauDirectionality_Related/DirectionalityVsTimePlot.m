@@ -1,4 +1,4 @@
-function DirectionalityVsTimePlot(outstruct,use_s)
+function DirectionalityVsTimePlot(outstruct,use_s,titlestr)
      
 studynames = fieldnames(outstruct);
 studynames(ismember(studynames,'IbaP301S')) = []; %exclude IbaP301S for too few datapoints
@@ -70,7 +70,7 @@ else
     loc = 'southeast';
     text(0.75,0.95,Rptext,'FontSize',20,'FontName','Times','Units','normalized');
 end
-ylabel(ylab);     
+ylabel(ylab); title(titlestr);
 legend(plothands,studylabels,'Location',loc,'NumColumns',3,'FontSize',20);
 set(gca,'FontSize',24,'FontName','Times');
 % 
