@@ -302,12 +302,12 @@ if ~logical(ipR.bootstrapping_nexis_sv)
 
     if strcmp(ipR.bounds_type_nexis_sv,'old') && (size(param_inits,1) > 1)
         param_init = mean(param_inits);
-        ub = 1.3*param_init;
-        lb = 0.7*param_init;
+        ub = 1.5*param_init;
+        lb = 0.5*param_init;
     elseif (size(param_inits,1) == 1)
         param_init = param_inits;
-        ub = 1.3*param_init;
-        lb = 0.7*param_init;
+        ub = 1.5*param_init;
+        lb = 0.5*param_init;
     else
         prct = str2double(ipR.bounds_type_nexis_sv(4:end));
         param_init = median(param_inits);
