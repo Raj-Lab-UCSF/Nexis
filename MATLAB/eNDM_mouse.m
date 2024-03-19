@@ -149,10 +149,6 @@ end
 if strcmp(ipR.study,'Henderson')
     load([cd filesep 'raw_data_mouse' filesep 'Henderson_Asyn_Data.mat'],...
         'Connection');    
-    C = Connection;% Define connectome
-if strcmp(ipR.study,'Henderson')
-    load([cd filesep 'raw_data_mouse' filesep 'Henderson_Asyn_Data.mat'],...
-        'Connection');    
     C = Connection;
 elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
     load([cd filesep 'raw_data_mouse' filesep 'GCI_PFF_Connection.mat'],...

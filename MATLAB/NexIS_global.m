@@ -258,6 +258,7 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     outputs.nexis_global.Full.init.lambda = ipR.lambda;
     outputs.nexis_global.Full.init.exclseed_costfun = ipR.exclseed_costfun;
     outputs.nexis_global.Full.init.excltpts_costfun = ipR.excltpts_costfun;
+    outputs.nexis_global.Full.init.logtrans = ipR.logtrans;
     outputs.nexis_global.Full.init.w_dir = ipR.w_dir;
     outputs.nexis_global.Full.init.param_init = ipR.param_init;
     outputs.nexis_global.Full.init.ub = ipR.ub;
