@@ -49,7 +49,7 @@ resample_rate_nexis_sv_ = 0.8;
 niters_nexis_sv_ = 100;
 verbose_nexis_sv_ = 0;
 fmindisplay_nexis_sv_ = 0;
-datatype_nexis_sv_ = 'gene'; % 'gene', 'ct_tasic', 'ct_zeisel'
+datatype_nexis_sv_ = 'gene'; % 'gene', 'ct_tasic', 'ct_zeisel', 'ct_yao'
 datalist_nexis_sv_ = 3578; % index for Trem2
 datapca_nexis_sv_ = 0;
 flowthresh_ = 99.93;
@@ -256,15 +256,13 @@ U = (U - minU) ./ (maxU - minU);
 % Solve and store results
 outputs.nexis_sv = struct;
 if ~logical(ipR.bootstrapping_nexis_sv)
-    fprintf('Creating Optimal nexis_sv Model\n');
+    fprintf('Creating Optimal NexIS:SV Model\n');
     time_stamps = tpts.(ipR.study);
     if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
         pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
-        U = DataToCCF(U,ipR.study,ipR.matdir);
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
-        
         % baseline test start
         if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
@@ -287,8 +285,9 @@ if ~logical(ipR.bootstrapping_nexis_sv)
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
     end
-    pathology = normalizer(data426.(ipR.study),ipR.normtype);
-    seed_location = seed426.(ipR.study);
+    if any(isnan(seed_location))
+        seed_location(isnan(seed_location)) = 0;
+    end
     n_types = size(U,2);
     ndmflds = fieldnames(outputs.nexis_global);
     if length(ndmflds) == 1
@@ -303,12 +302,12 @@ if ~logical(ipR.bootstrapping_nexis_sv)
 
     if strcmp(ipR.bounds_type_nexis_sv,'old') && (size(param_inits,1) > 1)
         param_init = mean(param_inits);
-        ub = 1.3*param_init;
-        lb = 0.7*param_init;
+        ub = 1.5*param_init;
+        lb = 0.5*param_init;
     elseif (size(param_inits,1) == 1)
         param_init = param_inits;
-        ub = 1.3*param_init;
-        lb = 0.7*param_init;
+        ub = [param_inits(1),Inf,Inf,1]; % fix gamma, unconstrain others
+        lb = [param_inits(1),0,0,0]; % fix gamma, unconstrain others;
     else
         prct = str2double(ipR.bounds_type_nexis_sv(4:end));
         param_init = median(param_inits);
@@ -332,12 +331,11 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     param_init = [param_init(1:4),zeros(1,n_types),zeros(1,n_types)];
     lb = [lb(1:4),-Inf(1,n_types),-Inf(1,n_types)];
     ub = [ub(1:4),Inf(1,n_types),Inf(1,n_types)];
-    
     objfun_handle = @(param) CostFunction_NexIS(param,C,U,time_stamps,...
         seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.costfun,...
         ipR.excltpts_costfun,ipR.exclseed_costfun,ipR.use_dataspace,ipR.study,...
         ipR.logtrans,ipR.lambda,ipR.matdir);
-    if logical(ipR.fmindisplay)
+    if logical(ipR.fmindisplay_nexis_sv)
         options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
             'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
             'FunctionTolerance',ipR.fxntol,'StepTolerance',ipR.steptol);
@@ -372,23 +370,23 @@ if ~logical(ipR.bootstrapping_nexis_sv)
         pathology = pathology(:,tinds);
         ynum = ynum(:,tinds);
     end
-    outputs.nexis_global.Full.data = pathology; % this has been normalized
-    outputs.nexis_global.Full.baseline = baseline; % this has been normalized
+    outputs.nexis_sv.Full.data = pathology; % this has been normalized
+    outputs.nexis_sv.Full.baseline = baseline; % this has been normalized
 
     % baseline test start
     if isnan(seed426.(ipR.study))
-        outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
+        outputs.nexis_sv.Full.time_stamps = time_stamps_orig(tinds+1);
     else
-        outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds);
+        outputs.nexis_sv.Full.time_stamps = time_stamps_orig(tinds);
     end
-    % outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
+    % outputs.nexis_sv.Full.time_stamps = time_stamps_orig(tinds+1);
     %baseline test end
 
     outputs.nexis_sv.Full.predicted = ynum;
     outputs.nexis_sv.Full.param_fit = param_num;
     outputs.nexis_sv.Full.fval = fval_num;
-    outputs.nexis_global.Full.init.seed = seed_save;
-    outputs.nexis_global.Full.init.C = C;
+    outputs.nexis_sv.Full.init.seed = seed_save;
+    outputs.nexis_sv.Full.init.C = C;
     if ismember(ipR.study,{'human','mouse'})
         outputs.nexis_sv.Full.init.study = ['asyn ' ipR.study];
     else
@@ -398,8 +396,10 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     outputs.nexis_sv.Full.init.volcorrect = ipR.volcorrect;
     outputs.nexis_sv.Full.init.normtype = ipR.normtype;
     outputs.nexis_sv.Full.init.costfun = ipR.costfun;
+    outputs.nexis_sv.Full.init.lambda = ipR.lambda;
     outputs.nexis_sv.Full.init.exclseed_costfun = ipR.exclseed_costfun;
     outputs.nexis_sv.Full.init.excltpts_costfun = ipR.excltpts_costfun;
+    outputs.nexis_sv.Full.init.logtrans = ipR.logtrans;
     outputs.nexis_sv.Full.init.w_dir = ipR.w_dir;
     outputs.nexis_sv.Full.init.param_init = param_init;
     outputs.nexis_sv.Full.init.ub = ub;
@@ -416,39 +416,35 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     outputs.nexis_sv.Full.fmincon.step_tolerance = ipR.steptol;
     outputs.nexis_sv.Full.fmincon.algorithm = ipR.algo;
     outputs.nexis_sv.Full.fmincon.max_evaluations = ipR.maxeval;
-
-    Rvalues = zeros(1,length(time_stamps));
-    for jj = 1:length(time_stamps)
-        % if strcmp(ipR.corrtype,'R')
-        Rvalues(jj) = corr(ynum(:,jj),pathology(:,jj), 'rows','complete');
-        % elseif strcmp(ipR.corrtype,'R_c')
-        %    naninds = isnan(pathology(:,1));
-        %    newxt = ynum; newxt(naninds,:) = [];
-        %    newpath = pathology; newpath(naninds,:) = [];
-        %    Rvalues(jj) = LinRcalc(newxt(:,jj),newpath(:,jj));
-        % end
+    
+    % Calculate per-timepoint R values
+    Rvalues = zeros(1,length(tinds));
+    for jj = 1:length(tinds)
+        Rvalues(jj) = corr(ynum(:,jj),pathology(:,jj),'rows','complete');
     end
     outputs.nexis_sv.Full.results.Corrs = Rvalues;
 
     P = reshape(pathology, [], 1);
     Y = reshape(ynum, [], 1);
     numObs1 = length(P(~isnan(P)));
-    lm_nexis_sv = fitlm(Y, P);
-    logL = lm_nexis_sv.LogLikelihood;
+    lm_nexis = fitlm(Y, P);
+    logL = lm_nexis.LogLikelihood;
     outputs.nexis_sv.Full.results.lm_LogL = logL;
     outputs.nexis_sv.Full.results.lm_AIC = -2*logL + 2*morder;
     outputs.nexis_sv.Full.results.lm_BIC = -2*logL + log(numObs1)*morder;
-    outputs.nexis_sv.Full.results.lm_intercept = lm_nexis_sv.Coefficients.Estimate(1);
-    outputs.nexis_sv.Full.results.lm_pval = lm_nexis_sv.Coefficients.pValue(1);
-    outputs.nexis_sv.Full.results.lm_Rsquared_ord = lm_nexis_sv.Rsquared.Ordinary;
-    outputs.nexis_sv.Full.results.lm_Rsquared_adj = lm_nexis_sv.Rsquared.Adjusted;
-    flow = FlowCalculator(ynum,C,beta_num,0,U,b_num);
-    for i = 1:size(flow,3)
-        flow_ = flow(:,:,i);
-        flow_(flow_ < prctile(nonzeros(flow),ipR.flowthresh)) = 0;
-        flow(:,:,i) = flow_;
-    end
-    outputs.nexis_sv.Full.flow = flow;
+    outputs.nexis_sv.Full.results.lm_intercept = lm_nexis.Coefficients.Estimate(1);
+    outputs.nexis_sv.Full.results.lm_pval = lm_nexis.Coefficients.pValue(2);
+    outputs.nexis_sv.Full.results.lm_Rsquared_ord = lm_nexis.Rsquared.Ordinary;
+    outputs.nexis_sv.Full.results.lm_Rsquared_adj = lm_nexis.Rsquared.Adjusted;
+
+    % flow = FlowCalculator(ynum,C,beta_num,0,U,b_num);
+    % for i = 1:size(flow,3)
+    %     flow_ = flow(:,:,i);
+    %     flow_(flow_ < prctile(nonzeros(flow),ipR.flowthresh)) = 0;
+    %     flow(:,:,i) = flow_;
+    % end
+    % outputs.nexis_sv.Full.flow = flow;
+
     if logical(ipR.verbose_nexis_sv)
         disp('--------------------------------------------------')
         disp('General nexis_sv minimizing quadratic error at all time stamps with fmincon')

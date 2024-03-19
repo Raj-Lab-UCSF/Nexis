@@ -249,9 +249,9 @@ if logical(ipR.datapca_nexis_sv) && (length(ipR.datalist_nexis_sv) > 1)
         U = -U;
     end
 end
-minU = repmat(min(U),size(U,1),1);
-maxU = repmat(max(U),size(U,1),1);
-U = (U - minU) ./ (maxU - minU);
+% minU = repmat(min(U),size(U,1),1);
+% maxU = repmat(max(U),size(U,1),1);
+% U = (U - minU) ./ (maxU - minU);
 
 % Solve and store results
 outputs.nexis_sv = struct;
@@ -302,12 +302,15 @@ if ~logical(ipR.bootstrapping_nexis_sv)
 
     if strcmp(ipR.bounds_type_nexis_sv,'old') && (size(param_inits,1) > 1)
         param_init = mean(param_inits);
-        ub = 1.5*param_init;
-        lb = 0.5*param_init;
+        ub = [param_init(1),Inf,Inf,1,0,0]; % fix gamma, unconstrain others
+        lb = [param_init(1),0,0,0,0,0]; % fix gamma, unconstrain others;
     elseif (size(param_inits,1) == 1)
         param_init = param_inits;
-        ub = 1.5*param_init;
-        lb = 0.5*param_init;
+        ub = [param_init(1),10*param_init(2),10*param_init(3),1,0,0]; % fix gamma, very loosely constrain others;
+        lb = [param_init(1),0.1*param_init(2),0.1*param_init(3),0,0,0]; % fix gamma, very loosely constrain others;
+        % param_init = param_inits;
+        % ub = 1.5*param_inits; % fix gamma, unconstrain others
+        % lb = 0.5*param_inits; % fix gamma, unconstrain others;
     else
         prct = str2double(ipR.bounds_type_nexis_sv(4:end));
         param_init = median(param_inits);
@@ -387,6 +390,7 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     outputs.nexis_sv.Full.fval = fval_num;
     outputs.nexis_sv.Full.init.seed = seed_save;
     outputs.nexis_sv.Full.init.C = C;
+    outputs.nexis_sv.Full.init.U_norm = U;
     if ismember(ipR.study,{'human','mouse'})
         outputs.nexis_sv.Full.init.study = ['asyn ' ipR.study];
     else
