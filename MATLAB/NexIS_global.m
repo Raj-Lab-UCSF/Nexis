@@ -277,7 +277,7 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     for jj = 1:length(tinds)
         Rvalues(jj) = corr(ynum(:,jj),pathology(:,jj),'rows','complete');
     end
-    outputs.nexis_global.Full.results.Corrs = Rvalues;
+    outputs.nexis_global.Full.results.Corrs = Rvalues; % NOTE: not corrected for seed
 
     P = reshape(pathology, [], 1);
     Y = reshape(ynum, [], 1);

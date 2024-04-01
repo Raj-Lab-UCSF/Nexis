@@ -426,7 +426,7 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     for jj = 1:length(tinds)
         Rvalues(jj) = corr(ynum(:,jj),pathology(:,jj),'rows','complete');
     end
-    outputs.nexis_sv.Full.results.Corrs = Rvalues;
+    outputs.nexis_sv.Full.results.Corrs = Rvalues; % NOTE: not corrected for seed
 
     P = reshape(pathology, [], 1);
     Y = reshape(ynum, [], 1);
