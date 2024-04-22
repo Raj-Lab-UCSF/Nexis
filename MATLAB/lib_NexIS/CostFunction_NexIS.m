@@ -32,7 +32,8 @@ predicted(:,excltpts_costfun_) = [];
 
 % Remove seed regions from cost function
 if logical(exclseed_costfun_) && ~isequal(seedregs,NaN)
-    seedbin = logical(seedregs);
+    seedbin = CCFToData(seedregs,studyname_,matdir_);
+    seedbin = logical(seedbin);
     predicted(seedbin,:) = [];
     pathology(seedbin,:) = [];
 elseif logical(exclseed_costfun_) && isequal(seedregs,NaN)

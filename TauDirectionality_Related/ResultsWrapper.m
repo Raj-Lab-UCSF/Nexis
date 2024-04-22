@@ -26,8 +26,8 @@ use_dataspace = 1;
 param_init = [NaN,0,1,0.5];
 
 % Connectome properties
-L_ret = sum(C_ret) - C_ret;
-L_ant = sum(C_ant) - C_ant;
+L_ret_ = diag(sum(C_ret)) - C_ret;
+L_ant = diag(sum(C_ant)) - C_ant;
 
 [v_ret,d_ret] = eig(L_ret); d_ret = abs(diag(d_ret)); v_ret = abs(v_ret);
 [dretsort,sortinds] = sort(d_ret); vretsort = v_ret(:,sortinds);
@@ -39,45 +39,45 @@ L_ant = sum(C_ant) - C_ant;
 % fit longitudinally alpha/beta/s (if fit_s)
 % fix gamma and alpha for per-timepoint, use LinR
 %% 2.05 Testing
-saveoutputs = 1;
-filename_out = 'outputs_all_test';
-outputs_all = struct;
-modelnames = {'fit_s'};
-% modelnames = {'fit_s','ret','ant','nd'};
-for i = 1:length(studynames)
-    tablename = [filename_out '_' studynames{i}];
-    sumtable = [];
-    ub = [Inf,Inf,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
-    lb = [0,0,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
-    for j = 1:length(modelnames)
-        fprintf('Study %d of %d, Model %s\n',i,length(studynames),modelnames{j})
-        outputs = NexIS_global('study',studynames{i},...
-                                'w_dir',w_dir,...
-                                'volcorrect',volcorrect,...
-                                'param_init',param_init,...
-                                'ub',ubs(j,:),...
-                                'lb',lbs(j,:),...
-                                'use_dataspace',use_dataspace,...
-                                'bootstrapping',bootstrapping);
-        outputs_all.(studynames{i}).(modelnames{j}) = outputs;
-        sumtable_i = Output2Table(outputs,0,'null','null');
-        sumtable_i.Properties.RowNames{1} = modelnames{j};
-        sumtable = [sumtable; sumtable_i];
-    end
+% saveoutputs = 1;
+% filename_out = 'outputs_all_test';
+% outputs_all = struct;
+% modelnames = {'fit_s'};
+% % modelnames = {'fit_s','ret','ant','nd'};
+% for i = 1:length(studynames)
+%     tablename = [filename_out '_' studynames{i}];
+%     sumtable = [];
+%     ub = [Inf,Inf,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
+%     lb = [0,0,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
+%     for j = 1:length(modelnames)
+%         fprintf('Study %d of %d, Model %s\n',i,length(studynames),modelnames{j})
+%         outputs = NexIS_global('study',studynames{i},...
+%                                 'w_dir',w_dir,...
+%                                 'volcorrect',volcorrect,...
+%                                 'param_init',param_init,...
+%                                 'ub',ubs(j,:),...
+%                                 'lb',lbs(j,:),...
+%                                 'use_dataspace',use_dataspace,...
+%                                 'bootstrapping',bootstrapping);
+%         outputs_all.(studynames{i}).(modelnames{j}) = outputs;
+%         sumtable_i = Output2Table(outputs,0,'null','null');
+%         sumtable_i.Properties.RowNames{1} = modelnames{j};
+%         sumtable = [sumtable; sumtable_i];
+%     end
     % if saveoutputs
     %     writetable(sumtable,[output_dir filesep tablename '.csv'],'WriteRowNames',true)
     % end
-end
-if saveoutputs
-    save([output_dir filesep filename_out '.mat'],'outputs_all');
-end
-
+% end
+% if saveoutputs
+%     save([output_dir filesep filename_out '.mat'],'outputs_all');
+% end
 
 %% 2.1 Longitudinal models
 saveoutputs = 1;
-filename_out = 'outputs_all_baseline';
+filename_out = 'outputs_all_exclseed';
 outputs_all = struct;
 modelnames = {'fit_s','ret','ant','nd'};
+% modelnames = {'fit_s'};
 for i = 1:length(studynames)
     tablename = [filename_out '_' studynames{i}];
     sumtable = [];
@@ -97,6 +97,9 @@ for i = 1:length(studynames)
                                 'ub',ubs(j,:),...
                                 'lb',lbs(j,:),...
                                 'use_dataspace',use_dataspace,...
+                                'costfun','linr',...
+                                'exclseed_outputs',1,...
+                                'exclseed_costfun',1,...
                                 'bootstrapping',bootstrapping);
         outputs_all.(studynames{i}).(modelnames{j}) = outputs;
         sumtable_i = Output2Table(outputs,0,'null','null');
@@ -117,8 +120,8 @@ filename_out = 'outputs_all';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
-% CompareDirPlots_deltaR(outputs_all,0);
-% CompareDirPlots_s(outputs_all,0);
+CompareDirPlots_deltaR(outputs_all,0);
+CompareDirPlots_s(outputs_all,0);
 CorrComparePlot(outputs_all,0);
 
 %% 2.3.1 Per-timepoint models, Lin R cost function, fix gamma and alpha

@@ -20,6 +20,7 @@ solvetype_ = 'analytic';
 volcorrect_ = 1;
 exclseed_costfun_ = 0;
 excltpts_costfun_ = [];
+exclseed_outputs_ = 1;
 logtrans_ = 'none';
 normtype_ = 'sum';
 Cnormtype_ = 'minmax';
@@ -59,6 +60,7 @@ addParameter(ip, 'solvetype', solvetype_, validST);
 addParameter(ip, 'volcorrect', volcorrect_, validBoolean);
 addParameter(ip, 'exclseed_costfun', exclseed_costfun_, validBoolean);
 addParameter(ip, 'excltpts_costfun', excltpts_costfun_);
+addParameter(ip, 'exclseed_outputs', exclseed_outputs_, validBoolean);
 addParameter(ip, 'logtrans', logtrans_);
 addParameter(ip, 'normtype', normtype_, validChar);
 addParameter(ip, 'Cnormtype', Cnormtype_, validChar);
@@ -144,7 +146,7 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
         time_stamps_orig = time_stamps;
         
         % baseline test start
-        if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
+        if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to CCF space for model init.
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
             seed_location = pathology(:,1);
@@ -258,6 +260,7 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     outputs.nexis_global.Full.init.lambda = ipR.lambda;
     outputs.nexis_global.Full.init.exclseed_costfun = ipR.exclseed_costfun;
     outputs.nexis_global.Full.init.excltpts_costfun = ipR.excltpts_costfun;
+    outputs.nexis_global.Full.init.exclseed_outputs = ipR.exclseed_outputs;
     outputs.nexis_global.Full.init.logtrans = ipR.logtrans;
     outputs.nexis_global.Full.init.w_dir = ipR.w_dir;
     outputs.nexis_global.Full.init.param_init = ipR.param_init;
@@ -273,14 +276,21 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     outputs.nexis_global.Full.fmincon.max_evaluations = ipR.maxeval;
     
     % Calculate per-timepoint R values
+    ynum_fitassess = ynum;
+    pathology_fitassess = pathology;
+    if ipR.exclseed_outputs && all(~isnan(seed426.(ipR.study)))
+        seedinds = find(seed_save);
+        ynum_fitassess(seedinds,:) = [];
+        pathology_fitassess(seedinds,:) = [];
+    end
     Rvalues = zeros(1,length(tinds));
     for jj = 1:length(tinds)
-        Rvalues(jj) = corr(ynum(:,jj),pathology(:,jj),'rows','complete');
+        Rvalues(jj) = corr(ynum_fitassess(:,jj),pathology_fitassess(:,jj),'rows','complete');
     end
     outputs.nexis_global.Full.results.Corrs = Rvalues; % NOTE: not corrected for seed
 
-    P = reshape(pathology, [], 1);
-    Y = reshape(ynum, [], 1);
+    P = reshape(pathology_fitassess, [], 1);
+    Y = reshape(ynum_fitassess, [], 1);
     numObs1 = length(P(~isnan(P)));
     lm_nexis = fitlm(Y, P);
     logL = lm_nexis.LogLikelihood;
@@ -345,7 +355,7 @@ else % With bootstrapping of parameters
             pathology = normalizer(pathology_raw,ipR.normtype);
             pathology_orig = pathology;
             time_stamps_orig = time_stamps;
-            if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
+            if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to CCF space for model init.
                 seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
             else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
                 seed_location = pathology(:,1);
@@ -457,6 +467,7 @@ else % With bootstrapping of parameters
         outputs.nexis_global.(fldname).init.lambda = ipR.lambda;
         outputs.nexis_global.(fldname).init.exclseed_costfun = ipR.exclseed_costfun;
         outputs.nexis_global.(fldname).init.excltpts_costfun = ipR.excltpts_costfun;
+        outputs.nexis_global.(fldname).init.exclseed_outputs = ipR.exclseed_outputs;
         outputs.nexis_global.(fldname).init.w_dir = ipR.w_dir;
         outputs.nexis_global.(fldname).init.param_init = ipR.param_init;
         outputs.nexis_global.(fldname).init.ub = ipR.ub;
@@ -533,7 +544,7 @@ else % With bootstrapping of parameters
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
-        if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
+        if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to CCF space for model init.
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
             seed_location = pathology(:,1);
