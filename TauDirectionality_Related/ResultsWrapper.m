@@ -6,34 +6,74 @@ figdir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Figures/TauDirection
 output_dir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Results_Tables_TauDir';
 load([matdir filesep 'Connectomes.mat'],'Connectomes');
 load([matdir filesep 'Mouse_Tauopathy_Data_HigherQ.mat'],'mousedata_struct')
-
-%% 1. Setting global properties of model
-% Connectomes
-C_ret = Connectomes.default; C_ant = C_ret.'; C_nd = (C_ret + C_ant)/2;
-C_ret = (C_ret - diag(diag(C_ret)));
-C_ant = (C_ant - diag(diag(C_ant)));
-C_nd = (C_nd - diag(diag(C_nd)));
-
-% Study names
 studynames = fieldnames(mousedata_struct);
 studynames(ismember(studynames,'IbaP301S')) = []; % Remove this study 
 
-% Non-default NexIS parameters
-bootstrapping = 0;
-w_dir = 1;
-volcorrect = 1;
-use_dataspace = 1;
-param_init = [NaN,0,1,0.5];
+%% 1. Model-free regressions
+C = Connectomes.default; 
+studyname = 'Hurtado';
+savenclose = 0;
+[dout,din,u2ret,u2ant,c2sout,c2sin] = DegreeEigenvectorSeedPlots(mousedata_struct,...
+                                        studyname,C,matdir,savenclose,figdir);
 
-% Connectome properties
-L_ret_ = diag(sum(C_ret)) - C_ret;
-L_ant = diag(sum(C_ant)) - C_ant;
 
-[v_ret,d_ret] = eig(L_ret); d_ret = abs(diag(d_ret)); v_ret = abs(v_ret);
-[dretsort,sortinds] = sort(d_ret); vretsort = v_ret(:,sortinds);
+%% 1.1 Conn. from seed
+% Hurtado & IbaHippInj
+ibahippinj_end = mousedata_struct.Hurtado.data(:,end);
+ibahippinj_end = DataToCCF(ibahippinj_end,'Hurtado',matdir);
+naninds = isnan(ibahippinj_end);
+ibahippinj_end(naninds) = [];
 
-[v_ant,d_ant] = eig(L_ant); d_ant = abs(diag(d_ant)); v_ant = abs(v_ant);
-[dantsort,sortinds] = sort(d_ant); vantsort = v_ant(:,sortinds);
+outdeg = sum(C_ret,2); 
+outdeg(naninds) = [];
+% outdeg_hurtado = CCFToData(outdeg,'Hurtado',matdir);
+% outdeg_ibahippinj = CCFToData(outdeg,'IbaStrInj',matdir);
+
+indeg = sum(C_ret,1).'; 
+indeg(naninds) = [];
+% indeg_hurtado = CCFToData(indeg,'Hurtado',matdir);
+% indeg_ibahippinj = CCFToData(indeg,'IbaStrInj',matdir);
+
+u1_ret = v_nd(:,2); 
+u1_ret(naninds) = [];
+% u1_ret_hurtado = CCFToData(u1_ret,'Hurtado',matdir);
+% u1_ret_ibahippinj = CCFToData(u1_ret,'IbaStrInj',matdir);
+
+u1_ant = v_ant(:,2); 
+u1_ant(naninds) = [];
+% u1_ant_hurtado = CCFToData(u1_ant,'Hurtado',matdir);
+% u1_ant_ibahippinj = CCFToData(u1_ant,'IbaStrInj',matdir);
+
+ylim1 = [0 max(ibahippinj_end)];
+xlim1 = [0 max(outdeg)];
+xlim2 = [0 max(indeg)];
+xlim3 = [0 max(u1_ret)];
+xlim4 = [0 max(u1_ant)];
+
+%% 1.1 Conn. from seed
+ibahippinj_seed = logical(mousedata_struct.IbaHippInj.seed);
+ibahippinj_end = mousedata_struct.IbaHippInj.seed(:,end);
+ibahippinj_end(logical(ibahippinj_seed)) = NaN;
+ibahippinj_end = ibahippinj_end(~isnan(ibahippinj_end));
+Cout_ibaseed = C_ret(ibahippinj_seed,:).';
+Cin_ibaseed = C_ret(:,ibahippinj_seed);
+Cout_ibaseed = Cout_ibaseed(~isnan(ibahippinj_end));
+Cin_ibaseed = Cin_ibaseed(~isnan(ibahippinj_end));
+
+figure; 
+subplot(1,2,1);
+scatter(Cout_ibaseed,ibahippinj_end,'bo','filled'); lsline;
+xlabel('Conn. from CA3 Seed'); ylabel('IbaHippInj End')
+legend(sprintf('R = %.2f',corr(Cout_ibaseed,ibahippinj_end)));
+title('Conn. from Seed vs. IbaHippInj');
+set(gca,'FontSize',16);
+
+subplot(1,2,2);
+scatter(Cin_ibaseed,ibahippinj_end,'ro','filled'); lsline;
+xlabel('Conn. to CA3 Seed'); ylabel('IbaHippInj End')
+legend(sprintf('R = %.2f',corr(Cin_ibaseed,ibahippinj_end)));
+title('Conn. to Seed vs. IbaHippInj');
+set(gca,'FontSize',16);
 
 %% 2. NexIS:global w/directionality modeling
 % fit longitudinally alpha/beta/s (if fit_s)
@@ -359,30 +399,7 @@ end
 % legend({'ret','ant','nd'}); ylabel('R'); xlabel('\beta t'); set(gca,'FontSize',16); title('Pathology R')
 
 
-% %% 3. Conn. from seed
-% ibahippinj_seed = logical(seed_all.IbaHippInj);
-% ibahippinj_end = taudata_all.IbaHippInj(:,2);
-% ibahippinj_end(logical(ibahippinj_seed)) = NaN;
-% ibahippinj_end = ibahippinj_end(~isnan(ibahippinj_end));
-% Cout_ibaseed = C_ret(ibahippinj_seed,:).';
-% Cin_ibaseed = C_ret(:,ibahippinj_seed);
-% Cout_ibaseed = Cout_ibaseed(~isnan(ibahippinj_end));
-% Cin_ibaseed = Cin_ibaseed(~isnan(ibahippinj_end));
-% 
-% figure; 
-% subplot(1,2,1);
-% scatter(Cout_ibaseed,ibahippinj_end,'bo','filled'); lsline;
-% xlabel('Conn. from CA3 Seed'); ylabel('IbaHippInj End')
-% legend(sprintf('R = %.2f',corr(Cout_ibaseed,ibahippinj_end)));
-% title('Conn. from Seed vs. IbaHippInj');
-% set(gca,'FontSize',16);
-% 
-% subplot(1,2,2);
-% scatter(Cin_ibaseed,ibahippinj_end,'ro','filled'); lsline;
-% xlabel('Conn. to CA3 Seed'); ylabel('IbaHippInj End')
-% legend(sprintf('R = %.2f',corr(Cin_ibaseed,ibahippinj_end)));
-% title('Conn. to Seed vs. IbaHippInj');
-% set(gca,'FontSize',16);
+
 % 
 % %% 4. S vs. Aggregation
 % load([matdir filesep 'aggregation_bias_struct.mat']);

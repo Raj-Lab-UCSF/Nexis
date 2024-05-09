@@ -47,10 +47,10 @@ clearvars -except C_ret C_ant C_nd taudata_all tpts_all labnms_all seed_all netl
 % v2sort = v2(:,sortinds2);
 L_ret = genLplcns(C_ret);
 [v_ret,d_ret] = eig(L_ret); d_ret = abs(diag(d_ret)); v_ret = abs(v_ret);
-[dretsort,sortinds] = sort(d_ret); vretsort = v_ret(:,sortinds);
+[dretsort,sortinds] = sort(d_ret); v_ret = v_ret(:,sortinds);
 L_ant = genLplcns(C_ant);
 [v_ant,d_ant] = eig(L_ant); d_ant = abs(diag(d_ant)); v_ant = abs(v_ant);
-[dantsort,sortinds] = sort(d_ant); vantsort = v_ant(:,sortinds);
+[dantsort,sortinds] = sort(d_ant); v_ant = v_ant(:,sortinds);
 
 %% 2.1 Figure 1, scatterplots
 hurtado_end = taudata_all.Hurtado(:,end);
