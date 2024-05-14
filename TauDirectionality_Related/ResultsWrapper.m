@@ -9,71 +9,17 @@ load([matdir filesep 'Mouse_Tauopathy_Data_HigherQ.mat'],'mousedata_struct')
 studynames = fieldnames(mousedata_struct);
 studynames(ismember(studynames,'IbaP301S')) = []; % Remove this study 
 
-%% 1. Model-free regressions
+%% 1. Model-free analysis
+%% 1.1 Graph metric regressions
 C = Connectomes.default; 
 studyname = 'Hurtado';
 savenclose = 0;
 [dout,din,u2ret,u2ant,c2sout,c2sin] = DegreeEigenvectorSeedPlots(mousedata_struct,...
                                         studyname,C,matdir,savenclose,figdir);
 
+%% 1.2 
 
-%% 1.1 Conn. from seed
-% Hurtado & IbaHippInj
-ibahippinj_end = mousedata_struct.Hurtado.data(:,end);
-ibahippinj_end = DataToCCF(ibahippinj_end,'Hurtado',matdir);
-naninds = isnan(ibahippinj_end);
-ibahippinj_end(naninds) = [];
 
-outdeg = sum(C_ret,2); 
-outdeg(naninds) = [];
-% outdeg_hurtado = CCFToData(outdeg,'Hurtado',matdir);
-% outdeg_ibahippinj = CCFToData(outdeg,'IbaStrInj',matdir);
-
-indeg = sum(C_ret,1).'; 
-indeg(naninds) = [];
-% indeg_hurtado = CCFToData(indeg,'Hurtado',matdir);
-% indeg_ibahippinj = CCFToData(indeg,'IbaStrInj',matdir);
-
-u1_ret = v_nd(:,2); 
-u1_ret(naninds) = [];
-% u1_ret_hurtado = CCFToData(u1_ret,'Hurtado',matdir);
-% u1_ret_ibahippinj = CCFToData(u1_ret,'IbaStrInj',matdir);
-
-u1_ant = v_ant(:,2); 
-u1_ant(naninds) = [];
-% u1_ant_hurtado = CCFToData(u1_ant,'Hurtado',matdir);
-% u1_ant_ibahippinj = CCFToData(u1_ant,'IbaStrInj',matdir);
-
-ylim1 = [0 max(ibahippinj_end)];
-xlim1 = [0 max(outdeg)];
-xlim2 = [0 max(indeg)];
-xlim3 = [0 max(u1_ret)];
-xlim4 = [0 max(u1_ant)];
-
-%% 1.1 Conn. from seed
-ibahippinj_seed = logical(mousedata_struct.IbaHippInj.seed);
-ibahippinj_end = mousedata_struct.IbaHippInj.seed(:,end);
-ibahippinj_end(logical(ibahippinj_seed)) = NaN;
-ibahippinj_end = ibahippinj_end(~isnan(ibahippinj_end));
-Cout_ibaseed = C_ret(ibahippinj_seed,:).';
-Cin_ibaseed = C_ret(:,ibahippinj_seed);
-Cout_ibaseed = Cout_ibaseed(~isnan(ibahippinj_end));
-Cin_ibaseed = Cin_ibaseed(~isnan(ibahippinj_end));
-
-figure; 
-subplot(1,2,1);
-scatter(Cout_ibaseed,ibahippinj_end,'bo','filled'); lsline;
-xlabel('Conn. from CA3 Seed'); ylabel('IbaHippInj End')
-legend(sprintf('R = %.2f',corr(Cout_ibaseed,ibahippinj_end)));
-title('Conn. from Seed vs. IbaHippInj');
-set(gca,'FontSize',16);
-
-subplot(1,2,2);
-scatter(Cin_ibaseed,ibahippinj_end,'ro','filled'); lsline;
-xlabel('Conn. to CA3 Seed'); ylabel('IbaHippInj End')
-legend(sprintf('R = %.2f',corr(Cin_ibaseed,ibahippinj_end)));
-title('Conn. to Seed vs. IbaHippInj');
-set(gca,'FontSize',16);
 
 %% 2. NexIS:global w/directionality modeling
 % fit longitudinally alpha/beta/s (if fit_s)
@@ -156,15 +102,26 @@ end
 
 %% 2.2 Figures per 2.1
 preload = 1;
+studyname = 'Hurtado';
 filename_out = 'outputs_all';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
-CompareDirPlots_deltaR(outputs_all,0);
-CompareDirPlots_s(outputs_all,0);
+% CompareDirPlots_deltaR(outputs_all,0);
+% CompareDirPlots_s(outputs_all,0);
 CorrComparePlot(outputs_all,0);
+tpt_plot = 3;
+[x,y] = RvstPlots(outputs_all,tpt_plot,1,matdir);
+% figure; hold on;
+% t = linspace(0,4.5,100);
+% for i = 1:length(y)
+%     plot(t,y{i})
+% end
+% plot([tpt_plot,tpt_plot],[0,0.7],'k--');
+% legend({'fit_s','ret','ant','nd'});
 
-%% 2.3.1 Per-timepoint models, Lin R cost function, fix gamma and alpha
+
+%% 2.3 Per-timepoint models, Lin R cost function, fix gamma and alpha
 saveoutputs = 1;
 outputs_all_tpt = struct;
 filename_out = 'outputs_all_tpt_fixgammaalpha_baseline';
@@ -225,104 +182,105 @@ filename_out = 'outputs_all_tpt_fixgammaalpha';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
 end
-% CompareDirPlots_deltaR(outputs_all_tpt,1);
-% [~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
-for i = 1:2
-    % PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
-    DirectionalityVsTimePlot(outputs_all_tpt,i-1)
+CompareDirPlots_deltaR(outputs_all_tpt,1);
+[~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
+dirmets = {'DeltaR','s'};
+for i = 1:length(dirmets)
+    PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
+    DirectionalityVsTimePlot(outputs_all_tpt,i-1,dirmets{i})
 end
 CorrComparePlot(outputs_all_tpt,1);
 
 %% 2.5 All models, Lin R cost function, fix gamma and alpha, s regularization
-saveoutputs = 1;
-filename_out_all = 'outputs_all';
-preload = 1;
-if preload
-    load([output_dir filesep filename_out_all '.mat'],'outputs_all');
-end
-outputs_all_tpt = struct;
-modelnames = {'fit_s','ret','ant','nd'};
-costfun = 'linr_reg_s';
-lambdavals = 10.^(linspace(-3,0,10));
-for n = 1:length(lambdavals)
-    fprintf('Lambda %d of %d\n',n,length(lambdavals))
-    lambda = lambdavals(n);
-    filename_out = ['outputs_all_tpt_fixgammaalpha_' num2str(lambda,'%.3f')];
-    filename_out = strrep(filename_out,'.','');
-    for i = 1:length(studynames)
-        tablename = [filename_out '_' studynames{i}];
-        sumtable = [];
-        for j = 1:length(modelnames)
-            fprintf('Study %d of %d, Model %s\n',i,length(studynames),modelnames{j})
-            params_opt = outputs_all.(studynames{i}).(modelnames{j}).nexis_global.Full.param_fit;
-            gammaval = params_opt(1); alphaval = params_opt(2);
-            ub = [gammaval,alphaval,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
-            lb = [gammaval,alphaval,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
-            if strcmp(studynames{i},'Hurtado')
-                excl_tpts = [[2,3];[1,3];[1,2]];
-            else
-                excl_tpts = [2; 1];
-            end
-            for k = 1:size(excl_tpts,1)
-                fprintf('Timepoint %d of %d\n',k,size(excl_tpts,1))
-                excl_tpt = excl_tpts(k,:);
-                if strcmp(studynames{i},'Hurtado')
-                    tpt_str = ['t_' num2str(setdiff(1:3,excl_tpt))];
-                else
-                    tpt_str = ['t_' num2str(setdiff(1:2,excl_tpt))];
-                end
-                outputs = NexIS_global('study',studynames{i},...
-                                        'w_dir',w_dir,...
-                                        'volcorrect',volcorrect,...
-                                        'param_init',param_init,...
-                                        'ub',ubs(j,:),...
-                                        'lb',lbs(j,:),...
-                                        'use_dataspace',use_dataspace,...
-                                        'bootstrapping',bootstrapping,...
-                                        'costfun',costfun,...
-                                        'excltpts_costfun',excl_tpt,...
-                                        'lambda',lambda);
-                outputs_all_tpt.(studynames{i}).(modelnames{j}).(tpt_str) = outputs;
-                sumtable_i = Output2Table(outputs,0,'null','null');
-                sumtable_i.Properties.RowNames{1} = [modelnames{j} ', ' tpt_str];
-                sumtable_i.Properties.VariableNames{16} = 'R';
-                sumtable = [sumtable; sumtable_i];
-            end
-        end
-        if saveoutputs
-            writetable(sumtable,[output_dir filesep tablename '.csv'],'WriteRowNames',true)
-        end
-    end
-    if saveoutputs
-        save([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
-    end
-end
-
-%% 2.5.1 Plotting 
+% saveoutputs = 1;
+% filename_out_all = 'outputs_all';
 % preload = 1;
-% cd(output_dir);
-% allmatfilenames = dir('*.mat');
-% outfolder_filenames = {};
-% for i = 1:length(allmatfilenames)
-%     outfolder_filenames = [outfolder_filenames, allmatfilenames(i).name];
+% if preload
+%     load([output_dir filesep filename_out_all '.mat'],'outputs_all');
 % end
-lambdavals = [0,10.^(linspace(-3,0,10))];
-for n = 1:length(lambdavals)
-    lambda = lambdavals(n); 
-    if lambda ~= 0
-        lambdastr = num2str(lambda,'%.3f');
-        lambdastr_ = strrep(lambdastr,'.','');
-        inputstr = ['outputs_all_tpt_fixgammaalpha_' lambdastr_];
-        file_in = load([output_dir filesep inputstr],'outputs_all_tpt');
-        titlestr = sprintf('lambda = %s',lambdastr);
-        DirectionalityVsTimePlot(file_in.outputs_all_tpt,1,titlestr)
-    else
-        inputstr = 'outputs_all_tpt_fixgammaalpha';
-        file_in = load([output_dir filesep inputstr],'outputs_all_tpt');
-        titlestr = sprintf('lambda = %d',lambda);
-        DirectionalityVsTimePlot(file_in.outputs_all_tpt,1,titlestr)        
-    end
-end
+% outputs_all_tpt = struct;
+% modelnames = {'fit_s','ret','ant','nd'};
+% costfun = 'linr_reg_s';
+% lambdavals = 10.^(linspace(-3,0,10));
+% for n = 1:length(lambdavals)
+%     fprintf('Lambda %d of %d\n',n,length(lambdavals))
+%     lambda = lambdavals(n);
+%     filename_out = ['outputs_all_tpt_fixgammaalpha_' num2str(lambda,'%.3f')];
+%     filename_out = strrep(filename_out,'.','');
+%     for i = 1:length(studynames)
+%         tablename = [filename_out '_' studynames{i}];
+%         sumtable = [];
+%         for j = 1:length(modelnames)
+%             fprintf('Study %d of %d, Model %s\n',i,length(studynames),modelnames{j})
+%             params_opt = outputs_all.(studynames{i}).(modelnames{j}).nexis_global.Full.param_fit;
+%             gammaval = params_opt(1); alphaval = params_opt(2);
+%             ub = [gammaval,alphaval,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
+%             lb = [gammaval,alphaval,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
+%             if strcmp(studynames{i},'Hurtado')
+%                 excl_tpts = [[2,3];[1,3];[1,2]];
+%             else
+%                 excl_tpts = [2; 1];
+%             end
+%             for k = 1:size(excl_tpts,1)
+%                 fprintf('Timepoint %d of %d\n',k,size(excl_tpts,1))
+%                 excl_tpt = excl_tpts(k,:);
+%                 if strcmp(studynames{i},'Hurtado')
+%                     tpt_str = ['t_' num2str(setdiff(1:3,excl_tpt))];
+%                 else
+%                     tpt_str = ['t_' num2str(setdiff(1:2,excl_tpt))];
+%                 end
+%                 outputs = NexIS_global('study',studynames{i},...
+%                                         'w_dir',w_dir,...
+%                                         'volcorrect',volcorrect,...
+%                                         'param_init',param_init,...
+%                                         'ub',ubs(j,:),...
+%                                         'lb',lbs(j,:),...
+%                                         'use_dataspace',use_dataspace,...
+%                                         'bootstrapping',bootstrapping,...
+%                                         'costfun',costfun,...
+%                                         'excltpts_costfun',excl_tpt,...
+%                                         'lambda',lambda);
+%                 outputs_all_tpt.(studynames{i}).(modelnames{j}).(tpt_str) = outputs;
+%                 sumtable_i = Output2Table(outputs,0,'null','null');
+%                 sumtable_i.Properties.RowNames{1} = [modelnames{j} ', ' tpt_str];
+%                 sumtable_i.Properties.VariableNames{16} = 'R';
+%                 sumtable = [sumtable; sumtable_i];
+%             end
+%         end
+%         if saveoutputs
+%             writetable(sumtable,[output_dir filesep tablename '.csv'],'WriteRowNames',true)
+%         end
+%     end
+%     if saveoutputs
+%         save([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
+%     end
+% end
+% 
+% %% 2.5.1 Plotting 
+% % preload = 1;
+% % cd(output_dir);
+% % allmatfilenames = dir('*.mat');
+% % outfolder_filenames = {};
+% % for i = 1:length(allmatfilenames)
+% %     outfolder_filenames = [outfolder_filenames, allmatfilenames(i).name];
+% % end
+% lambdavals = [0,10.^(linspace(-3,0,10))];
+% for n = 1:length(lambdavals)
+%     lambda = lambdavals(n); 
+%     if lambda ~= 0
+%         lambdastr = num2str(lambda,'%.3f');
+%         lambdastr_ = strrep(lambdastr,'.','');
+%         inputstr = ['outputs_all_tpt_fixgammaalpha_' lambdastr_];
+%         file_in = load([output_dir filesep inputstr],'outputs_all_tpt');
+%         titlestr = sprintf('lambda = %s',lambdastr);
+%         DirectionalityVsTimePlot(file_in.outputs_all_tpt,1,titlestr)
+%     else
+%         inputstr = 'outputs_all_tpt_fixgammaalpha';
+%         file_in = load([output_dir filesep inputstr],'outputs_all_tpt');
+%         titlestr = sprintf('lambda = %d',lambda);
+%         DirectionalityVsTimePlot(file_in.outputs_all_tpt,1,titlestr)        
+%     end
+% end
 
 % if preload
 %     load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
