@@ -102,24 +102,18 @@ end
 
 %% 2.2 Figures per 2.1
 preload = 1;
-studyname = 'Hurtado';
 filename_out = 'outputs_all';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
 % CompareDirPlots_deltaR(outputs_all,0);
 % CompareDirPlots_s(outputs_all,0);
-CorrComparePlot(outputs_all,0);
+savenclose = 0;
+pertpt = 0;
+usefits = 1;
 tpt_plot = 3;
-[x,y] = RvstPlots(outputs_all,tpt_plot,1,matdir);
-% figure; hold on;
-% t = linspace(0,4.5,100);
-% for i = 1:length(y)
-%     plot(t,y{i})
-% end
-% plot([tpt_plot,tpt_plot],[0,0.7],'k--');
-% legend({'fit_s','ret','ant','nd'});
-
+CorrComparePlot(outputs_all,pertpt,savenclose,figdir);
+% RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
 
 %% 2.3 Per-timepoint models, Lin R cost function, fix gamma and alpha
 saveoutputs = 1;
@@ -189,7 +183,7 @@ for i = 1:length(dirmets)
     PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
     DirectionalityVsTimePlot(outputs_all_tpt,i-1,dirmets{i})
 end
-CorrComparePlot(outputs_all_tpt,1);
+CorrComparePlot(outputs_all_tpt,1,savenclose,figdir);
 
 %% 2.5 All models, Lin R cost function, fix gamma and alpha, s regularization
 % saveoutputs = 1;

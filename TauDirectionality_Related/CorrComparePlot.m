@@ -1,4 +1,4 @@
-function CorrComparePlot(outstruct,pertimepoint)
+function CorrComparePlot(outstruct,pertimepoint,savenclose_,figdir_)
      
     studynames = fieldnames(outstruct);
     studynames(ismember(studynames,'IbaP301S')) = []; %exclude IbaP301S for too few datapoints
@@ -45,6 +45,8 @@ function CorrComparePlot(outstruct,pertimepoint)
                 col = cmap(i,:);
                 gplot(j).MarkerFaceColor = col;
                 xlabs{j} = studylabels{j};
+                bar((xpos(j) + offsets(i)),Rmat(j,i),0.15,'LineWidth',2,...
+                    'EdgeColor',cmap(i,:),'FaceColor',cmap(i,:),'FaceAlpha',0.25);
             end
             legstr = [legstr gplot(1)];
         end
@@ -76,6 +78,7 @@ function CorrComparePlot(outstruct,pertimepoint)
         cmap = hsv(length(modelnames));
         cmapfull = NaN(length(shapes)*length(tptnames),3);
         Rvecs = NaN(length(shapes)*length(tptnames),length(modelnames));
+        Rmeanmat = NaN(length(shapes),length(modelnames));
         for i = 1:size(cmap,1)
             inds = (1:length(tptnames)) + (i-1)*length(tptnames);
             cmapfull(inds,:) = repmat(cmap(i,:),length(tptnames),1);
@@ -83,6 +86,7 @@ function CorrComparePlot(outstruct,pertimepoint)
         for i = 1:length(modelnames)
             inds = (1:length(tptnames)) + (i-1)*length(tptnames);
             Rvec = Rmat(:,inds).';
+            Rmeanmat(:,i) = mean(Rvec).';
             Rvecs(:,i) = Rvec(:);
         end
         xpos = 1:length(studynames); 
@@ -94,6 +98,8 @@ function CorrComparePlot(outstruct,pertimepoint)
         for i = 1:length(modelnames)
             gplot = gscatter((xposvec.' + offsets(i)),Rvecs(:,i),g,...
                 repmat(cmap(i,:),length(xposvec),1),shapes,7,'doleg','off');
+            bar((xpos + offsets(i)),Rmeanmat(:,i),0.15,'LineWidth',2,...
+                'EdgeColor',cmap(i,:),'FaceColor','none');
             for j = 1:length(xposvec)
                 col = cmap(i,:);
                 gplot(xposvec(j)).MarkerFaceColor = col;
@@ -139,5 +145,7 @@ function CorrComparePlot(outstruct,pertimepoint)
         % ylabel('R_r_e_t - R_a_n_t'); title('All Timepoints');
         % set(gca,'FontSize',20,'FontName','Times');
     end
-
+if savenclose_
+    print([figdir_ filesep 'Rt_curves'],'-dtiffn','-r300'); close;
+end
 end

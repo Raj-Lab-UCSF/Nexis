@@ -1,4 +1,4 @@
-function [modelpreds,modelfits] = RvstPlots(outstruct,tpt_fit_,use_fits,matdir_)
+function [modelpreds,modelfits] = RvstPlots(outstruct,tpt_fit_,use_fits,matdir_,savenclose_,figdir_)
 
 studynames_ = fieldnames(outstruct);
 studynames_(ismember(studynames_,'IbaP301S')) = []; %exclude IbaP301S for too few datapoints
@@ -11,7 +11,7 @@ end
 modelpreds = cell(length(studynames_),length(modelnames));
 modelfits = modelpreds;
 tranges = modelpreds;
-ntsim = 100;
+ntsim = 10;
 for i = 1:length(studynames_)
     ts_i = outstruct.(studynames_{i}).(modelnames{1}).nexis_global.Full.time_stamps;
     C_ = outstruct.(studynames_{i}).(modelnames{1}).nexis_global.Full.init.C;
@@ -22,15 +22,14 @@ for i = 1:length(studynames_)
     end
     trange_sim = linspace(0, 1.5*ts_i(end), ntsim);
     datafit_i = outstruct.(studynames_{i}).(modelnames{1}).nexis_global.Full.data(:,tpt_fit_);
+    t0_i = 0;
     for j = 1:length(modelnames)
         resstruct_ij = outstruct.(studynames_{i}).(modelnames{j}).nexis_global.Full;
         params_ij = resstruct_ij.param_fit;
         if isnan(seed_i)
             params_ij(1) = 1; % should be redundant
             seed_i = resstruct_ij.baseline;
-            t0 = 2;
-        else
-            t0 = 0;
+            t0_i = 2;
         end
         seed_i_ccf = DataToCCF(seed_i,studynames_{i},matdir_);
         seed_i_ccf(isnan(seed_i_ccf)) = 0;
@@ -40,13 +39,13 @@ for i = 1:length(studynames_)
         corrXmat_ij = [datafit_i, preds_ij];
         Rvals_ij = corr(corrXmat_ij);
         modelfits{i,j} = Rvals_ij(1,2:end);
-        tranges{i,j} = trange_sim + t0;
+        tranges{i,j} = trange_sim + t0_i;
     end
 end
 
 cmap = hsv(length(modelnames));
-figure('Units','inches','Position',[0 0 20 20]); 
-tiledlayout(3,4,'TileSpacing','compact','Padding','tight');
+figure('Units','inches','Position',[0 0 18 15]);
+tl = tiledlayout(3,4);
 for i = 1:length(studynames_)
     nexttile; hold on;
     mins_i = NaN(1,length(modelnames)); maxs_i = mins_i;
@@ -54,22 +53,34 @@ for i = 1:length(studynames_)
         plot(tranges{i,j},modelfits{i,j},'Color',cmap(j,:),'LineWidth',3);
         mins_i(j) = min(modelfits{i,j}); maxs_i(j) = max(modelfits{i,j});
     end
-    plotmax_i = 1.1*max(maxs_i);
+    valmax_i = max(maxs_i); plotmax_i = 1.1*valmax_i;
+    valmin_i = min(mins_i);
     if sign(min(mins_i)) == 1
-        plotmin_i = 0.9*min(mins_i);
+        plotmin_i = 0.9*valmin_i;
     else
-        plotmin_i = 1.1*min(mins_i);
+        plotmin_i = 1.1*valmin_i;
     end
     ts_i = outstruct.(studynames_{i}).(modelnames{1}).nexis_global.Full.time_stamps;
     tfit_i = ts_i(tpt_fit_);
     plot([tfit_i,tfit_i], [plotmin_i,plotmax_i],'LineWidth',2,'LineStyle',':','Color','k');
+    t_min = min(tranges{i,j}); t_max = max(tranges{i,j});
+    xlim([t_min, t_max]); ylim([plotmin_i, plotmax_i]);
+    t_inc = (t_max - t_min)/3; t_incs = (0:3)*t_inc; t_xtick = t_incs + t_min;
+    xticks(t_xtick); yticks([valmin_i,valmax_i]); ytickformat('%.2f');
     legnams = {'Ret','Ant','N.D.'};
     if use_fits
         s_i = outstruct.(studynames_{i}).(modelnames{1}).nexis_global.Full.param_fit(4);
         fits_str = sprintf('s = %.2f',s_i);
         legnams = [fits_str, legnams];
     end
-    legend(legnams,'Location','southwest')
     title(studylabels{i});
-    set(gca,'FontName','Times','FontSize',16);
+    set(gca,'FontName','Times','FontSize',20,'box','on');
+    legend(legnams,'Location','southwest','FontSize',18)
+end
+xlabel(tl, 't (Months)', 'FontSize', 24, 'FontName', 'Times', 'FontWeight', 'bold');
+ylabel(tl, 'R', 'FontSize', 24, 'FontName', 'Times', 'FontWeight', 'bold');
+
+if savenclose_
+    print([figdir_ filesep 'Rt_curves'],'-dtiffn','-r300'); close;
+end
 end
