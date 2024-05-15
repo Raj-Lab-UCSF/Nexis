@@ -11,7 +11,7 @@ end
 modelpreds = cell(length(studynames_),length(modelnames));
 modelfits = modelpreds;
 tranges = modelpreds;
-ntsim = 10;
+ntsim = 30;
 for i = 1:length(studynames_)
     ts_i = outstruct.(studynames_{i}).(modelnames{1}).nexis_global.Full.time_stamps;
     C_ = outstruct.(studynames_{i}).(modelnames{1}).nexis_global.Full.init.C;

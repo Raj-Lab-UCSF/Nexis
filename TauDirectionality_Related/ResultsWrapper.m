@@ -12,14 +12,12 @@ studynames(ismember(studynames,'IbaP301S')) = []; % Remove this study
 %% 1. Model-free analysis
 %% 1.1 Graph metric regressions
 C = Connectomes.default; 
-studyname = 'Hurtado';
+studynames_test = {'IbaHippInj','Hurtado'};
 savenclose = 0;
-[dout,din,u2ret,u2ant,c2sout,c2sin] = DegreeEigenvectorSeedPlots(mousedata_struct,...
-                                        studyname,C,matdir,savenclose,figdir);
-
-%% 1.2 
-
-
+for i = 1:length(studynames_test)
+    DegreeEigenvectorSeedPlots(mousedata_struct,studynames_test{i},...
+        C,matdir,savenclose,figdir);
+end
 
 %% 2. NexIS:global w/directionality modeling
 % fit longitudinally alpha/beta/s (if fit_s)
@@ -113,7 +111,7 @@ pertpt = 0;
 usefits = 1;
 tpt_plot = 3;
 CorrComparePlot(outputs_all,pertpt,savenclose,figdir);
-% RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
+RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
 
 %% 2.3 Per-timepoint models, Lin R cost function, fix gamma and alpha
 saveoutputs = 1;
@@ -176,14 +174,19 @@ filename_out = 'outputs_all_tpt_fixgammaalpha';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
 end
-CompareDirPlots_deltaR(outputs_all_tpt,1);
-[~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
-dirmets = {'DeltaR','s'};
-for i = 1:length(dirmets)
-    PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
-    DirectionalityVsTimePlot(outputs_all_tpt,i-1,dirmets{i})
+savenclose = 0;
+% CompareDirPlots_deltaR(outputs_all_tpt,1);
+% [~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
+% dirmets = {'DeltaR','s'};
+% for i = 1:length(dirmets)
+%     PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
+%     DirectionalityVsTimePlot(outputs_all_tpt,i-1,dirmets{i})
+% end
+plottypes = {'alpha_s','beta_s','alpha_beta'};
+for i = 1:length(plottypes)
+    [amat,bmat,smat] = salphabetaPlot(outputs_all_tpt,plottypes{i},savenclose,figdir);
 end
-CorrComparePlot(outputs_all_tpt,1,savenclose,figdir);
+% CorrComparePlot(outputs_all_tpt,1,savenclose,figdir);
 
 %% 2.5 All models, Lin R cost function, fix gamma and alpha, s regularization
 % saveoutputs = 1;

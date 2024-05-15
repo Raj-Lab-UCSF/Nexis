@@ -1,6 +1,6 @@
 function [D_out,D_in,u1_ret,u1_ant,conn2seed_out,conn2seed_in] = ...
     DegreeEigenvectorSeedPlots(outstruct_,studyname_,C_,matdir_,...
-    savenclose_,figdirectory)
+    savenclose_,figdir_)
 
 % Define connectomes
 C_ = C_ - diag(diag(C_));
@@ -77,13 +77,13 @@ conn2seed_in(naninds) = [];
 metric_cell = {D_out,D_in,u1_ret,u1_ant,conn2seed_out,conn2seed_in};
 metric_name = {'Out-degree','In-degree','u_1, L', 'u_1, L^T',...
     'C_s_e_e_d, outgoing', 'C_s_e_e_d, incoming'};
-plotcolors = {'r','b','r','b','r','b'};
-plotshapes = {'o','o','s','s','d','d'};
+plotcolors = {'r','r','g','g','b','b'};
+plotshapes = {'o','s','o','s','o','s'};
 
 % Plotting
 ylim_plot = [0 max(data_end)];
 studyname_plot = strrep(studyname_,'_',' ');
-figure('Units','inches','Position',[0 0 25 5]); 
+figure('Units','inches','Position',[0 0 30 5]); 
 tiledlayout(1,length(metric_name),'TileSpacing','compact','Padding','tight');
 for i = 1:length(metric_cell)
     nexttile;
@@ -97,33 +97,52 @@ for i = 1:length(metric_cell)
     end
     xlim(xlim_i); 
     xticks([xlim_i(1), mean(xlim_i), xlim_i(2)]);
-    if ~ismember(i,[3,4])
+    if ismember(i,[1,2])
         xtickformat('%.1f');
-    else
+    elseif ismember(i,[3,4])
         xtickformat('%.2f');
+    else
+        xtickformat('%2d');
     end
     xlabel(metric_name{i});
-    text(0.6,0.1,sprintf('R = %.2f',corr(plotdata_i,data_end)),...
-        'FontSize',20,'FontName','Times','Units','normalized');
+    [corrR,pval] = corr(plotdata_i,data_end);
+    pvalstr = [];
+    if pval < 0.05
+        pvalstr = [pvalstr '*'];
+        if pval < 0.01
+            pvalstr = [pvalstr '*'];
+            if pval < 0.001
+                pvalstr = [pvalstr '*'];
+            end
+        end
+    end
+    if ~isempty(pvalstr)        
+        text(0.5,0.1,sprintf('R = %.2f%s',corrR,pvalstr),...
+            'FontSize',20,'FontName','Times','Units','normalized',...
+            'FontWeight','bold');
+    else
+        text(0.6,0.1,sprintf('R = %.2f%s',corrR,pvalstr),...
+            'FontSize',20,'FontName','Times','Units','normalized');
+    end
     set(gca,'FontSize',20,'FontName','Times');
 end
 
 if savenclose_
-    print([figdirectory filesep 'NoModelScatterplots'],'-dtiffn','-r300'); close;
+    print([figdir_ filesep 'NoModelScatterplots'],'-dtiffn','-r300'); close;
 end
 
-    function L = genLplcns(mat)
-    
-        Dr = sum(mat,2);
-        Dc = sum(mat,1);
-        small = find(Dr < 0.05 * mean(Dr));
-        Dr(small(:)) = 0.05 * mean(Dr);
-        small = find(Dc < 0.05 * mean(Dc));
-        Dc(small(:)) = 0.05 * mean(Dc);
-        Dr = diag(Dr);
-        Dc = diag(Dc);
-        
-        L = eye(size(mat)) - ((Dr^-(1/2)) * mat * (Dc^-(1/2)));
-    end
+    % function L = genLplcns(mat)
+    % 
+    %     Dr = sum(mat,2);
+    %     Dc = sum(mat,1);
+    %     small = find(Dr < 0.05 * mean(Dr));
+    %     Dr(small(:)) = 0.05 * mean(Dr);
+    %     small = find(Dc < 0.05 * mean(Dc));
+    %     Dc(small(:)) = 0.05 * mean(Dc);
+    %     Dr = diag(Dr);
+    %     Dc = diag(Dc);
+    % 
+    %     L = eye(size(mat)) - ((Dr^-(1/2)) * mat * (Dc^-(1/2)));
+    % end
 
 end
