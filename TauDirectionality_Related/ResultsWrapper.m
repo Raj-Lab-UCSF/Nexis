@@ -4,21 +4,88 @@ codedir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Nexis'; cd(codedir)
 matdir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Nexis/raw_data_mouse';
 figdir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Figures/TauDirectionality';
 output_dir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Results_Tables_TauDir';
+brainframedir = '/Users/justintorok/Documents/MATLAB/Brainframe-Dev/Brainframe';
+addpath(brainframedir)
 load([matdir filesep 'Connectomes.mat'],'Connectomes');
 load([matdir filesep 'Mouse_Tauopathy_Data_HigherQ.mat'],'mousedata_struct')
 studynames = fieldnames(mousedata_struct);
 studynames(ismember(studynames,'IbaP301S')) = []; % Remove this study 
+C = Connectomes.default; 
 
 %% 1. Model-free analysis
-%% 1.1 Graph metric regressions
-C = Connectomes.default; 
-studynames_test = {'IbaHippInj','Hurtado'};
+%% 1.1 Graph metric analyses
+studynames_test = {'IbaStrInj'};
 savenclose = 0;
 for i = 1:length(studynames_test)
     DegreeEigenvectorSeedPlots(mousedata_struct,studynames_test{i},...
         C,matdir,savenclose,figdir);
 end
+[R_vals, ttest_results] = CompareGraphMetricPlot(mousedata_struct,C,'all',matdir,0,figdir);
 
+%% 1.2 Connectome heatmap
+C_norm = log2(C); C_norm(C_norm < 0) = 0;
+C_norm(logical(eye(size(C_norm)))) = 0;
+C_norm = -(min(C_norm(:)) - C_norm) / (max(C_norm(:)) - min(C_norm(:))); 
+figure; imagesc(C_norm); colormap('hot'); colorbar; axis square;
+
+%% 1.3 Pathology brainframe
+datasets_bf = {'Hurtado'};
+savenclose = 1;
+reggroups_ = zeros(213,1); %Chunk of code to define region_groups
+amy = 1:11; cer = 12:23; sub = 24:26; hip = 27:37; hyp = 38:57;
+ncx = 58:95; med = 96:120; mid = 121:141; olf = 142:149; pal = 150:157;
+pon = 158:170; str = 171:178; tha = 179:213;
+reggroups_(amy) = 1; reggroups_(cer) = 2; reggroups_(sub) = 3; 
+reggroups_(hip) = 4; reggroups_(hyp) = 5; reggroups_(ncx) = 6;
+reggroups_(med) = 7; reggroups_(mid) = 8; reggroups_(olf) = 9;
+reggroups_(pal) = 10; reggroups_(pon) = 11; reggroups_(str) = 12;
+reggroups_(tha) = 13;
+reggroups_ = [reggroups_;reggroups_];
+cmap_ = hsv(length(unique(reggroups_)));
+ngrad = 3;
+
+for m = 1:length(datasets_bf)
+    datset = datasets_bf{m};
+    datinput_data = DataToCCF([],datset,matdir);
+    tpts = mousedata_struct.(datset).time_stamps;
+    for k = 1:size(datinput_data,2)
+        datinput_k = datinput_data(:,k);
+        nany = isnan(datinput_k);
+        datinput_k(nany) = 0;
+        xfac = 0.15*(max(datinput_k)/max(datinput_data(~nany,1)))^(1/3);
+        reggroups_data = zeros(length(reggroups_),1);
+        cmap_data = zeros(length(unique(reggroups_))*ngrad,3);
+        for i = 1:length(unique(reggroups_))
+            cmap_i = cmap_(i,:);
+            reggroup_i_inds = (reggroups_ == i);
+            for j = 1:ngrad
+                newgroupind = (i-1)*ngrad + j;
+                thresh_j = j*100/ngrad;
+                zeroinds = (reggroups_data == 0);
+                threshinds = (datinput_k <= prctile(nonzeros(datinput_k),thresh_j));
+                ij_inds = (zeroinds + threshinds + reggroup_i_inds == 3);
+                reggroups_data(ij_inds) = newgroupind;
+                cmap_data(newgroupind,:) = (1/2)*cmap_i + (1/2)*(((ngrad-j)*ones(1,3) + j*cmap_i)/ngrad);
+            end
+        end
+        imglab = sprintf('PathologyBrainframe_Data_%s_t%d',datset,tpts(k));
+        input_struct_data = brainframe_inputs_mouse(brainframedir,'data',datinput_k,...
+                                                    'voxUreg',1,...
+                                                    'xfac',xfac,...
+                                                    'pointsize',5,...
+                                                    'norm_method','max',...
+                                                    'bgcolor','w',...
+                                                    'img_format','tiffn',...
+                                                    'cmap',cmap_data,...
+                                                    'region_groups',reggroups_data,...
+                                                    'centered',[0 1],...
+                                                    'img_directory',figdir,...
+                                                    'img_labels',imglab,...
+                                                    'img_renderer','painters',...
+                                                    'savenclose',savenclose);
+        brainframe(input_struct_data);
+    end
+end
 %% 2. NexIS:global w/directionality modeling
 % fit longitudinally alpha/beta/s (if fit_s)
 % fix gamma and alpha for per-timepoint, use LinR
@@ -112,6 +179,7 @@ usefits = 1;
 tpt_plot = 3;
 CorrComparePlot(outputs_all,pertpt,savenclose,figdir);
 RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
+[R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all,0);
 
 %% 2.3 Per-timepoint models, Lin R cost function, fix gamma and alpha
 saveoutputs = 1;
@@ -177,16 +245,16 @@ end
 savenclose = 0;
 % CompareDirPlots_deltaR(outputs_all_tpt,1);
 % [~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
-% dirmets = {'DeltaR','s'};
-% for i = 1:length(dirmets)
-%     PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
-%     DirectionalityVsTimePlot(outputs_all_tpt,i-1,dirmets{i})
-% end
+dirmets = {'DeltaR','s'};
+for i = 1:length(dirmets)
+    PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
+    DirectionalityVsTimePlot(outputs_all_tpt,i-1,dirmets{i})
+end
 plottypes = {'alpha_s','beta_s','alpha_beta'};
 for i = 1:length(plottypes)
     [amat,bmat,smat] = salphabetaPlot(outputs_all_tpt,plottypes{i},savenclose,figdir);
 end
-% CorrComparePlot(outputs_all_tpt,1,savenclose,figdir);
+CorrComparePlot(outputs_all_tpt,1,savenclose,figdir);
 
 %% 2.5 All models, Lin R cost function, fix gamma and alpha, s regularization
 % saveoutputs = 1;

@@ -21,13 +21,7 @@ D_in = sum(C_ret).';
 D_out = sum(C_ret,2);
 D_mean = (D_in + D_out)/2;
 
-% Normalized Laplacian eigendecomposition, u2
-% L_ret = diag(D_in) - C_ret;
-% L_ant = diag(D_out) - C_ant;
-% L_ret = genLplcns(C_ret);
-% L_ant = genLplcns(C_ant);
-% L_ret_norm = eye(size(C_ret)) - diag(D_out)^(-0.5) * C_ret * diag(D_in)^(-0.5);
-% L_ant_norm = eye(size(C_ant)) - diag(D_in)^(-0.5) * C_ant * diag(D_out)^(-0.5);
+% Normalized Laplacian eigendecomposition, u1
 L_ret_norm = eye(size(C_ret)) - diag(D_mean)^(-0.5) * C_ret * diag(D_mean)^(-0.5);
 L_ant_norm = eye(size(C_ant)) - diag(D_mean)^(-0.5) * C_ant * diag(D_mean)^(-0.5);
 L_ret = L_ret_norm;
@@ -36,13 +30,13 @@ L_ant = L_ant_norm;
 [v_ret,d_ret] = eig(L_ret);
 d_ret = real(diag(d_ret));
 [~,sortinds] = sort(d_ret);
-v_ret = abs(v_ret(:,sortinds));
+v_ret = real(v_ret(:,sortinds));
 u1_ret = v_ret(:,1); 
 
 [v_ant,d_ant] = eig(L_ant);
 d_ant = real(diag(d_ant));
 [~,sortinds] = sort(d_ant);
-v_ant= abs(v_ant(:,sortinds));
+v_ant= real(v_ant(:,sortinds));
 u1_ant = v_ant(:,1);
 
 % Mean connectivity to seed
@@ -75,36 +69,49 @@ conn2seed_out(naninds) = [];
 conn2seed_in(naninds) = [];
 
 metric_cell = {D_out,D_in,u1_ret,u1_ant,conn2seed_out,conn2seed_in};
-metric_name = {'Out-degree','In-degree','u_1, L', 'u_1, L^T',...
-    'C_s_e_e_d, outgoing', 'C_s_e_e_d, incoming'};
-plotcolors = {'r','r','g','g','b','b'};
-plotshapes = {'o','s','o','s','o','s'};
+metric_name = {'Out-degree','In-degree','$v_{1}, L_{ret}$',...
+    '$v_{1}, L_{ant}$','C, from seed', 'C, to seed'};
+plotcolors = {'b','b','g','g','r','r'};
+plotshapes = {'o','s','+','x','^','v'};
 
 % Plotting
 ylim_plot = [0 max(data_end)];
 studyname_plot = strrep(studyname_,'_',' ');
-figure('Units','inches','Position',[0 0 30 5]); 
-tiledlayout(1,length(metric_name),'TileSpacing','compact','Padding','tight');
+figure('Units','inches','Position',[0 0 9 15]); 
+tiledlayout(3,2,'TileSpacing','compact');
 for i = 1:length(metric_cell)
-    nexttile;
+    nexttile; hold on;
     plotdata_i = metric_cell{i};
-    xlim_i = [min(plotdata_i), max(plotdata_i)];
-    scatter(plotdata_i,data_end,[plotcolors{i} plotshapes{i}],'filled'); 
-    l = lsline; l.LineWidth = 2; l.Color = 'k';
+    xlim_i = [0, max(plotdata_i)];
+    scatter(plotdata_i,data_end,50,[plotcolors{i} plotshapes{i}]); 
+    lm = fitlm(plotdata_i,data_end);
+    x_lm = linspace(0,1.5*max(plotdata_i),100).'; 
+    [y_lm, y_ci] = predict(lm, x_lm);
+    plot(x_lm,y_ci(:,1),'k:'); plot(x_lm,y_ci(:,2),'k:'); 
+    fill([x_lm; flipud(x_lm)],[y_ci(:,1); flipud(y_ci(:,2))],[1 0 0.25],...
+        'EdgeColor','none','FaceAlpha',0.15);
+    plot(x_lm,y_lm,'k','LineWidth',2);
     ylim(ylim_plot); yticks([ylim_plot(1), mean(ylim_plot), ylim_plot(2)]);
-    if i == 1
+    yticklabels({'0',num2str(mean(ylim_plot),'%.1f'),num2str(ylim_plot(2),'%.1f')})  
+    if i == 3
         ylabel([studyname_plot ' Pathology']);
     end
     xlim(xlim_i); 
-    xticks([xlim_i(1), mean(xlim_i), xlim_i(2)]);
+    xticks([0, mean(xlim_i), xlim_i(2)]);
     if ismember(i,[1,2])
-        xtickformat('%.1f');
+        xticklabels({'0',num2str(mean(xlim_i)/10000,'%.1f'),num2str(max(xlim_i)/10000,'%.1f')})        
+        text(0.95,-0.18,'\times10^{4}','FontSize',20,'FontName','Times','Units','normalized',...
+            'Interpreter','tex');
+        xlabel(metric_name{i});
     elseif ismember(i,[3,4])
-        xtickformat('%.2f');
+        xticklabels({'0',num2str(mean(xlim_i),'%.2f'),num2str(max(xlim_i),'%.2f')})
+        xlabel(metric_name{i},'Interpreter','latex');
     else
-        xtickformat('%2d');
+        xticklabels({'0',num2str(mean(xlim_i)/1000,'%.1f'),num2str(max(xlim_i)/1000,'%.1f')})        
+        text(0.95,-0.18,'\times10^{3}','FontSize',20,'FontName','Times','Units','normalized',...
+            'Interpreter','tex');
+        xlabel(metric_name{i});
     end
-    xlabel(metric_name{i});
     [corrR,pval] = corr(plotdata_i,data_end);
     pvalstr = [];
     if pval < 0.05
@@ -116,19 +123,20 @@ for i = 1:length(metric_cell)
             end
         end
     end
+    yoffsets = [0.9,0.9,0.9,0.9,0.1,0.1];
     if ~isempty(pvalstr)        
-        text(0.5,0.1,sprintf('R = %.2f%s',corrR,pvalstr),...
-            'FontSize',20,'FontName','Times','Units','normalized',...
+        text(0.52,yoffsets(i),sprintf('R = %.2f%s',corrR,pvalstr),...
+            'FontSize',18,'FontName','Times','Units','normalized',...
             'FontWeight','bold');
     else
-        text(0.6,0.1,sprintf('R = %.2f%s',corrR,pvalstr),...
-            'FontSize',20,'FontName','Times','Units','normalized');
+        text(0.62,yoffsets(i),sprintf('R = %.2f%s',corrR,pvalstr),...
+            'FontSize',18,'FontName','Times','Units','normalized');
     end
-    set(gca,'FontSize',20,'FontName','Times');
+    set(gca,'FontSize',20,'FontName','Times','box','on');
 end
 
 if savenclose_
-    print([figdir_ filesep 'NoModelScatterplots'],'-dtiffn','-r300'); close;
+    print([figdir_ filesep 'NoModelScatterplots_' studyname_],'-dtiffn','-r300'); close;
 end
 
     % function L = genLplcns(mat)
