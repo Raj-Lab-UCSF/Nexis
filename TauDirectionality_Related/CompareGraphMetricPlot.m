@@ -34,8 +34,9 @@ d_ant = real(diag(d_ant));
 v_ant= real(v_ant(:,sortinds));
 u1_ant = v_ant(:,1);
 
-metric_names = {'\textrm{Out-degree}','\textrm{In-degree}','$v_{1}, L_{ret}$',...
-    '$v_{1}, L_{ant}$','\textrm{C, from seed}', '\textrm{C, to seed}'};
+metric_names = {'\textrm{C, from seed}', '\textrm{C, to seed}', ...
+    '\textrm{Out-degree}','\textrm{In-degree}','$v_{1}, L_{ret}$',...
+    '$v_{1}, L_{ant}$'};
 studynames_ind = [];
 Rmat = [];
 for i = 1:length(studynames_)
@@ -52,7 +53,7 @@ for i = 1:length(studynames_)
         data_i = data_i(:,2:end);
         tptnames = tptnames(2:end);
     end
-    if isnumeric(timepoint_flag) && ismember(timepoint_flag,tptnames)
+    if isnumeric(timepoint_flag) && ismember(timepoint_flag,(1:length(tptnames)))
         tptnames = timepoint_flag;
     end
     seedreg_ccf = DataToCCF(seedreg,studyname_,matdir_);
@@ -75,7 +76,7 @@ for i = 1:length(studynames_)
     conn2seed_out_i = conn2seed_out; conn2seed_out_i(naninds) = [];
     conn2seed_in_i = conn2seed_in; conn2seed_in_i(naninds) = [];
 
-    metric_cell = {D_out_i,D_in_i,u1_ret_i,u1_ant_i,conn2seed_out_i,conn2seed_in_i};
+    metric_cell = {conn2seed_out_i,conn2seed_in_i,D_out_i,D_in_i,u1_ret_i,u1_ant_i};
     % plotcolors = {'b','b','g','g','r','r'};
     % plotshapes = {'o','s','+','x','^','v'};
     
@@ -118,34 +119,50 @@ ttest_struct.Paired.pvals = pvals2*3;
 
 % Create boxplots
 figure('Units','inches','Position',[0 0 10 8]); hold on;
-xpos_mat = NaN(size(Rmat)); gbox = xpos_mat;
-g = studynames_ind;
-cmap_boxplot = [[0 0 1]; [0 0 1]; [0 1 0]; [0 1 0]; [1 0 0]; [1 0 0]];
-markerscatter = {'o','s','+','x','^','v'};
-xposscatter = @(y) 0.2 * (2*rand - 1) + y;
-for j = 1:size(Rmat,2)
-    gbox(:,j) = j;
-    for i = 1:size(Rmat,1)
-        xpos_mat(i,j) = xposscatter(j);
-    end
-end
-Rvec = Rmat(:); gbox = gbox(:);
-b = boxplot(Rvec,gbox,'Colors',cmap_boxplot,'Symbol','');
-set(b,{'linew'},{2});
-for j = 1:size(Rmat,2)
-    gscatter(xpos_mat(:,j),Rmat(:,j),g,cmap_boxplot(j,:),markerscatter{j},7,'off');
-end
+% xpos_mat = NaN(size(Rmat)); 
+% gbox = xpos_mat; g = studynames_ind;
+% coffset1 = 0.05; coffset2 = 0.1; coffset3 = 0.7;
+% cmap_boxplot = [[coffset1 coffset2 coffset3]; ...
+%     [coffset2 coffset1 coffset3]; [coffset1+0.7 coffset3 coffset2]; ...
+%     [coffset2+0.7 coffset3 coffset1]; [coffset3 coffset1 coffset2]; ...
+%     [coffset3 coffset2 coffset1]];
+
+cmap_boxplot = [[0.05, 0.40, 1];...
+                [0.15, 0.3, 1];...
+                [0.50, 0.80, 0.15];...
+                [0.50, 0.9, 0.05];...
+                [0.75, 0.05, 1];...
+                [0.65, 0.15, 1]];
+% markerscatter = {'o','s','+','x','^','v'};
+% xposscatter = @(y) 0.2 * (2*rand - 1) + y;
+% for j = 1:size(Rmat,2)
+    % gbox(:,j) = j;
+%     for i = 1:size(Rmat,1)
+%         xpos_mat(i,j) = xposscatter(j);
+%     end
+% end
+% Rvec = Rmat(:); 
+% gbox = gbox(:);
+violin(Rmat,'facecolor',cmap_boxplot,'medc',[]);
+% b = boxplot(Rvec,gbox,'Colors',cmap_boxplot,'Symbol','');
+% set(b,{'linew'},{2});
+% for j = 1:size(Rmat,2)
+%     gscatter(xpos_mat(:,j),Rmat(:,j),g,cmap_boxplot(j,:),markerscatter{j},7,'off');
+% end
 plot([0.5,length(metric_names)+0.5],[0,0],'k:','LineWidth',1);
+hLegend = findobj(gcf, 'Type', 'Legend'); hLegend.Visible = 'off';
+% hLegend.String = {'Mean R'}; hLegend.FontSize = 22; hLegend.Box = 'on';
 xticks(1:length(metric_cell)); xlim([0.5,length(metric_names)+0.5]); 
 xticklabels(metric_names);
 xaxisproperties= get(gca, 'XAxis');
 xaxisproperties.TickLabelInterpreter = 'latex';
-yplotmax = max(Rvec) + 0.05;
-yplotmin = min(Rvec) - 0.05;
-ylim([yplotmin,yplotmax]); yticks([yplotmin,(yplotmin+yplotmax)/2,yplotmax]);
-ytickformat('%.2f');
-ylabel('R'); 
-set(gca,'FontSize',20,'FontName','Times');
+yplotmax = 0.85; yplotmin = -0.4;
+% yplotmax = max(Rvec) + 0.05; yplotmin = min(Rvec) - 0.05;
+ylim([yplotmin,yplotmax]);
+yticks([-0.3,0,0.3,0.6]);
+yticklabels({'-0.3','0','0.3','0.6'});
+ylabel("Pearson's R"); 
+set(gca,'FontSize',24,'FontName','Times');
 
 if savenclose_
     print([figdir_ filesep 'NoModelBoxplots'],'-dtiffn','-r300'); close;

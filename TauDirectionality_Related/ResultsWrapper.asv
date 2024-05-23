@@ -38,9 +38,7 @@ for i = 1:length(datasets_bf)
         savenclose,figdir)
 end
 
-%% 1.4 Connectivity to/from seed brainframes
-
-
+%% 1.4 Connectivity to/from seed 
 %% 2. NexIS:global w/directionality modeling
 % fit longitudinally alpha/beta/s (if fit_s)
 % fix gamma and alpha for per-timepoint, use LinR
