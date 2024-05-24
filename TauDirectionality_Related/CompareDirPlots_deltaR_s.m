@@ -13,12 +13,10 @@ if ~pertimepoint
     for i = 1:size(Rmat,1)
         for j = 1:size(Rmat,2)
             resstruct = outstruct.(studynames{i}).(modelnames{j}).nexis_global.Full;
-            % if strcmp(RvR2,'R2')
-            %     Rmat(i,j) = resstruct.results.lm_Rsquared_adj;
-            % else
-            datavec = resstruct.data(:);
-            predvec = resstruct.predicted(:);
-            Rmat(i,j) = corr(datavec,predvec,'rows','complete');
+            Rmat(i,j) = (resstruct.results.lm_Rsquared_ord)^(0.5);
+            % datavec = resstruct.data(:);
+            % predvec = resstruct.predicted(:);
+            % Rmat(i,j) = corr(datavec,predvec,'rows','complete');
             if j == 1
                 svals(i) = resstruct.param_fit(4);
             end

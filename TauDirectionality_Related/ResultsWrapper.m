@@ -34,64 +34,41 @@ datasets_bf = studynames;
 tptsplot = 'All';
 savenclose = 1;
 for i = 1:length(datasets_bf)
-    BrainframePlot(mousedata_struct,datasets_bf{i},tptsplot,matdir,...
+    BrainframePathologyPlot(mousedata_struct,datasets_bf{i},tptsplot,matdir,...
         savenclose,figdir)
 end
 
 %% 1.4 Connectivity to/from seed brainframes
-
+dataset_bf = 'IbaStrInj';
+tptsplot = 3;
+seedconntypes = {'In','Out'};
+savenclose = 1;
+for i = 1:length(seedconntypes)
+    BrainframeSeedConnectivityPlot(mousedata_struct,dataset_bf,tptsplot,...
+        C,seedconntypes{i},matdir,savenclose,figdir);
+end
 
 %% 2. NexIS:global w/directionality modeling
 % fit longitudinally alpha/beta/s (if fit_s)
 % fix gamma and alpha for per-timepoint, use LinR
-%% 2.05 Testing
-% saveoutputs = 1;
-% filename_out = 'outputs_all_test';
-% outputs_all = struct;
-% modelnames = {'fit_s'};
-% % modelnames = {'fit_s','ret','ant','nd'};
-% for i = 1:length(studynames)
-%     tablename = [filename_out '_' studynames{i}];
-%     sumtable = [];
-%     ub = [Inf,Inf,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
-%     lb = [0,0,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
-%     for j = 1:length(modelnames)
-%         fprintf('Study %d of %d, Model %s\n',i,length(studynames),modelnames{j})
-%         outputs = NexIS_global('study',studynames{i},...
-%                                 'w_dir',w_dir,...
-%                                 'volcorrect',volcorrect,...
-%                                 'param_init',param_init,...
-%                                 'ub',ubs(j,:),...
-%                                 'lb',lbs(j,:),...
-%                                 'use_dataspace',use_dataspace,...
-%                                 'bootstrapping',bootstrapping);
-%         outputs_all.(studynames{i}).(modelnames{j}) = outputs;
-%         sumtable_i = Output2Table(outputs,0,'null','null');
-%         sumtable_i.Properties.RowNames{1} = modelnames{j};
-%         sumtable = [sumtable; sumtable_i];
-%     end
-    % if saveoutputs
-    %     writetable(sumtable,[output_dir filesep tablename '.csv'],'WriteRowNames',true)
-    % end
-% end
-% if saveoutputs
-%     save([output_dir filesep filename_out '.mat'],'outputs_all');
-% end
 
 %% 2.1 Longitudinal models
+% Input parameters
 saveoutputs = 1;
-filename_out = 'outputs_all_exclseed';
+filename_out = 'outputs_all';
 outputs_all = struct;
 modelnames = {'fit_s','ret','ant','nd'};
-% modelnames = {'fit_s'};
+use_dataspace = 1;
+w_dir = 1;
+volcorrect = 1;
+bootstrapping = 0;
+exclseed_outputs = 0;
+param_init = [NaN,0.5,1,0.5];
+
+% Run NexIS_global
 for i = 1:length(studynames)
     tablename = [filename_out '_' studynames{i}];
     sumtable = [];
-    % if ~isnan(mousedata_struct.(studynames{i}).seed)
-    %     gammaval = 1/(sum(mousedata_struct.(studynames{i}).seed));
-    % else
-    %     gammaval = 1;
-    % end
     ub = [Inf,Inf,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
     lb = [0,0,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
     for j = 1:length(modelnames)
@@ -104,9 +81,8 @@ for i = 1:length(studynames)
                                 'lb',lbs(j,:),...
                                 'use_dataspace',use_dataspace,...
                                 'costfun','linr',...
-                                'exclseed_outputs',1,...
-                                'exclseed_costfun',1,...
-                                'bootstrapping',bootstrapping);
+                                'bootstrapping',bootstrapping,...
+                                'exclseed_outputs',exclseed_outputs);
         outputs_all.(studynames{i}).(modelnames{j}) = outputs;
         sumtable_i = Output2Table(outputs,0,'null','null');
         sumtable_i.Properties.RowNames{1} = modelnames{j};
@@ -126,23 +102,28 @@ filename_out = 'outputs_all';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
-% CompareDirPlots_deltaR(outputs_all,0);
-% CompareDirPlots_s(outputs_all,0);
 savenclose = 0;
 pertpt = 0;
 usefits = 1;
 tpt_plot = 3;
 CorrComparePlot(outputs_all,pertpt,savenclose,figdir);
-RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
+% RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
 [R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all,0);
 
 %% 2.3 Per-timepoint models, Lin R cost function, fix gamma and alpha
+% Input parameters
 saveoutputs = 1;
 outputs_all_tpt = struct;
-filename_out = 'outputs_all_tpt_fixgammaalpha_baseline';
+filename_out = 'outputs_all_tpt_fixgammaalpha';
 modelnames = {'fit_s','ret','ant','nd'};
 costfun = 'linr';
-% excl_tpts = [[2,3];[1,3];[1,2]];
+use_dataspace = 1;
+w_dir = 1;
+volcorrect = 1;
+bootstrapping = 0;
+exclseed_outputs = 0;
+
+% Run NexIS_global
 for i = 1:length(studynames)
     tablename = [filename_out '_' studynames{i}];
     sumtable = [];
@@ -152,20 +133,11 @@ for i = 1:length(studynames)
         gammaval = params_opt(1); alphaval = params_opt(2);
         ub = [gammaval,alphaval,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
         lb = [gammaval,alphaval,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
-        if strcmp(studynames{i},'Hurtado')
-            excl_tpts = [[2,3];[1,3];[1,2]];
-        else
-            excl_tpts = [2; 1];
-        end
+        excl_tpts = [[2,3];[1,3];[1,2]];
         for k = 1:size(excl_tpts,1)
             fprintf('Timepoint %d of %d\n',k,size(excl_tpts,1))
             excl_tpt = excl_tpts(k,:);
-            % tpt_str = ['t_' num2str(setdiff(1:3,excl_tpt))];
-            if strcmp(studynames{i},'Hurtado')
-                tpt_str = ['t_' num2str(setdiff(1:3,excl_tpt))];
-            else
-                tpt_str = ['t_' num2str(setdiff(1:2,excl_tpt))];
-            end
+            tpt_str = ['t_' num2str(setdiff(1:3,excl_tpt))];
             outputs = NexIS_global('study',studynames{i},...
                                     'w_dir',w_dir,...
                                     'volcorrect',volcorrect,...
@@ -175,7 +147,8 @@ for i = 1:length(studynames)
                                     'use_dataspace',use_dataspace,...
                                     'bootstrapping',bootstrapping,...
                                     'costfun',costfun,...
-                                    'excltpts_costfun',excl_tpt);
+                                    'excltpts_costfun',excl_tpt,...
+                                    'exclseed_outputs',exclseed_outputs);
             outputs_all_tpt.(studynames{i}).(modelnames{j}).(tpt_str) = outputs;
             sumtable_i = Output2Table(outputs,0,'null','null');
             sumtable_i.Properties.RowNames{1} = [modelnames{j} ', ' tpt_str];
@@ -200,11 +173,11 @@ end
 savenclose = 0;
 % CompareDirPlots_deltaR(outputs_all_tpt,1);
 % [~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
-dirmets = {'DeltaR','s'};
-for i = 1:length(dirmets)
-    PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
-    DirectionalityVsTimePlot(outputs_all_tpt,i-1,dirmets{i})
-end
+% dirmets = {'DeltaR','s'};
+% for i = 1:length(dirmets)
+%     PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
+%     DirectionalityVsTimePlot(outputs_all_tpt,i-1,dirmets{i})
+% end
 plottypes = {'alpha_s','beta_s','alpha_beta'};
 for i = 1:length(plottypes)
     [amat,bmat,smat] = salphabetaPlot(outputs_all_tpt,plottypes{i},savenclose,figdir);

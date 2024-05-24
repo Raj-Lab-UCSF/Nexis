@@ -107,15 +107,15 @@ if strcmp(whichplot_,'All')
         xticks([0, mean(xlim_i), xlim_i(2)]);
         if ismember(i,[1,2])
             xticklabels({'0',num2str(mean(xlim_i)/10000,'%.1f'),num2str(max(xlim_i)/10000,'%.1f')})        
-            text(0.95,-0.18,'\times10^{4}','FontSize',20,'FontName','Times','Units','normalized',...
+            text(0.95,-0.17,'\times10^{4}','FontSize',20,'FontName','Times','Units','normalized',...
                 'Interpreter','tex');
             xlabel(metric_name{i});
-        elseif ismember(i,[3,4])
+        elseif ismember(i,[5,6])
             xticklabels({'0',num2str(mean(xlim_i),'%.2f'),num2str(max(xlim_i),'%.2f')})
             xlabel(metric_name{i},'Interpreter','latex');
         else
-            xticklabels({'0',num2str(mean(xlim_i)/1000,'%.1f'),num2str(max(xlim_i)/1000,'%.1f')})        
-            text(0.95,-0.18,'\times10^{3}','FontSize',20,'FontName','Times','Units','normalized',...
+            xticklabels({'0',num2str(mean(xlim_i)/100000,'%.1f'),num2str(max(xlim_i)/100000,'%.1f')})        
+            text(0.95,-0.17,'\times10^{5}','FontSize',20,'FontName','Times','Units','normalized',...
                 'Interpreter','tex');
             xlabel(metric_name{i});
         end
@@ -130,7 +130,7 @@ if strcmp(whichplot_,'All')
                 end
             end
         end
-        yoffsets = [0.9,0.9,0.9,0.9,0.1,0.1];
+        yoffsets = [0.1,0.1,0.1,0.1,0.9,0.9];
         if ~isempty(pvalstr)        
             text(0.52,yoffsets(i),sprintf('R = %.2f%s',corrR,pvalstr),...
                 'FontSize',18,'FontName','Times','Units','normalized',...
@@ -139,12 +139,12 @@ if strcmp(whichplot_,'All')
             text(0.62,yoffsets(i),sprintf('R = %.2f%s',corrR,pvalstr),...
                 'FontSize',18,'FontName','Times','Units','normalized');
         end
-        set(gca,'FontSize',20,'FontName','Times','box','on');
+        set(gca,'FontSize',18,'FontName','Times','box','on');
     end
 elseif strcmp(whichplot_,'C_seed')
     ylim_plot = [0 max(data_end)];
     studyname_plot = strrep(studyname_,'_',' ');
-    figure('Units','inches','Position',[0 0 9 5]); 
+    figure('Units','inches','Position',[0 0 9 4.5]); 
     tiledlayout(1,2,'TileSpacing','compact');
     for i = 1:2
         nexttile; hold on;
@@ -166,8 +166,8 @@ elseif strcmp(whichplot_,'C_seed')
         end
         xlim(xlim_i); 
         xticks([0, mean(xlim_i), xlim_i(2)]);
-        xticklabels({'0',num2str(mean(xlim_i)/1000,'%.1f'),num2str(max(xlim_i)/1000,'%.1f')})        
-        text(0.95,-0.18,'\times10^{3}','FontSize',20,'FontName','Times','Units','normalized',...
+        xticklabels({'0',num2str(mean(xlim_i)/10000,'%.1f'),num2str(max(xlim_i)/10000,'%.1f')})        
+        text(0.95,-0.18,'\times10^{4}','FontSize',20,'FontName','Times','Units','normalized',...
             'Interpreter','tex');
         xlabel(metric_name{i});
         [corrR,pval] = corr(plotdata_i,data_end);

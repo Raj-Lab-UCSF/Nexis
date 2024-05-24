@@ -10,9 +10,10 @@ function CorrComparePlot(outstruct,pertimepoint,savenclose_,figdir_)
         for i = 1:size(Rmat,1)
             for j = 1:size(Rmat,2)
                 resstruct = outstruct.(studynames{i}).(modelnames{j}).nexis_global.Full;
-                datavec = resstruct.data(:);
-                predvec = resstruct.predicted(:);
-                Rmat(i,j) = corr(datavec,predvec,'rows','complete');
+                Rmat(i,j) = (resstruct.results.lm_Rsquared_ord)^(0.5);
+                % datavec = resstruct.data(:);
+                % predvec = resstruct.predicted(:);
+                % Rmat(i,j) = corr(datavec,predvec,'rows','complete');
             end
         end
         % shapes = {'o','s','d','^'};
@@ -68,9 +69,10 @@ function CorrComparePlot(outstruct,pertimepoint,savenclose_,figdir_)
                 for k = 1:length(tptnames)
                     resstruct_tpt = resstruct.(tptnames{k}).nexis_global.Full;
                     Rind = k + length(tptnames)*(j-1);
-                    datavec = resstruct_tpt.data(:);
-                    predvec = resstruct_tpt.predicted(:);
-                    Rmat(i,Rind) = corr(datavec,predvec,'rows','complete');
+                    Rmat(i,Rind) = resstruct_tpt.results.Corrs;
+                    % datavec = resstruct_tpt.data(:);
+                    % predvec = resstruct_tpt.predicted(:);
+                    % Rmat(i,Rind) = corr(datavec,predvec,'rows','complete');
                 end
             end
         end

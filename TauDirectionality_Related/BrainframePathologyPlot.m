@@ -1,4 +1,7 @@
-function BrainframePlot(outstruct,datset,tpts,savenclose_,figdir_)
+function BrainframePathologyPlot(outstruct,datset,tptsplotinds_,matdir_,savenclose_,figdir_)
+
+brainframedir = '/Users/justintorok/Documents/MATLAB/Brainframe-Dev/Brainframe';
+addpath(brainframedir)
 
 reggroups_ = zeros(213,1); %Chunk of code to define region_groups
 amy = 1:11; cer = 12:23; sub = 24:26; hip = 27:37; hyp = 38:57;
@@ -13,9 +16,13 @@ reggroups_ = [reggroups_;reggroups_];
 cmap_ = hsv(length(unique(reggroups_)));
 ngrad = 3;
 
-datinput_data = DataToCCF([],datset,matdir);
+datinput_data = DataToCCF([],datset,matdir_);
 tpts = outstruct.(datset).time_stamps;
-if isnu
+if isnumeric(tptsplotinds_)
+    datinput_data = datinput_data(:,tptsplotinds_);
+    tpts = tpts(tptsplotinds_);
+end
+
 for k = 1:size(datinput_data,2)
     datinput_k = datinput_data(:,k);
     nany = isnan(datinput_k);
