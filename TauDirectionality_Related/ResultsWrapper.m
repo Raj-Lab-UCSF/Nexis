@@ -42,7 +42,7 @@ end
 dataset_bf = 'IbaStrInj';
 tptsplot = 3;
 seedconntypes = {'In','Out'};
-savenclose = 1;
+savenclose = 0;
 for i = 1:length(seedconntypes)
     BrainframeSeedConnectivityPlot(mousedata_struct,dataset_bf,tptsplot,...
         C,seedconntypes{i},matdir,savenclose,figdir);
@@ -102,13 +102,15 @@ filename_out = 'outputs_all';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
-savenclose = 0;
+savenclose = 1;
 pertpt = 0;
-usefits = 1;
-tpt_plot = 3;
-CorrComparePlot(outputs_all,pertpt,savenclose,figdir);
-% RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
-[R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all,0);
+tpt_plot = 3; % vs. last time point
+datset_bf = 'IbaStrInj';
+
+RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
+% [R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all,pertept,savenclose,figdir);
+% save([output_dir filesep 'CompareDirLong.mat'],'R','s','tstatstruct');
+% BrainframeModelPredPlot(outputs_all,datset_bf,matdir,savenclose,figdir);
 
 %% 2.3 Per-timepoint models, Lin R cost function, fix gamma and alpha
 % Input parameters
@@ -130,7 +132,7 @@ for i = 1:length(studynames)
     for j = 1:length(modelnames)
         fprintf('Study %d of %d, Model %s\n',i,length(studynames),modelnames{j})
         params_opt = outputs_all.(studynames{i}).(modelnames{j}).nexis_global.Full.param_fit;
-        gammaval = params_opt(1); alphaval = params_opt(2);
+        gammaval = params_opt(1); alphaval = params_opt(2); % Fix gamma/alpha to longitudinal vals
         ub = [gammaval,alphaval,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
         lb = [gammaval,alphaval,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
         excl_tpts = [[2,3];[1,3];[1,2]];
@@ -170,19 +172,22 @@ filename_out = 'outputs_all_tpt_fixgammaalpha';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
 end
-savenclose = 0;
-% CompareDirPlots_deltaR(outputs_all_tpt,1);
-% [~,sadl,snadl] = CompareDirPlots_s(outputs_all_tpt,1);
+savenclose = 1;
+pertpt = 1;
 % dirmets = {'DeltaR','s'};
 % for i = 1:length(dirmets)
 %     PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
 %     DirectionalityVsTimePlot(outputs_all_tpt,i-1,dirmets{i})
 % end
+[R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all_tpt,pertpt,savenclose,figdir);
+save([output_dir filesep 'CompareDirPerTpt.mat'],'R','s','tstatstruct');
 plottypes = {'alpha_s','beta_s','alpha_beta'};
 for i = 1:length(plottypes)
     [amat,bmat,smat] = salphabetaPlot(outputs_all_tpt,plottypes{i},savenclose,figdir);
 end
-CorrComparePlot(outputs_all_tpt,1,savenclose,figdir);
+for i = 1:2
+    CorrComparePlot_Combined(outputs_all,outputs_all_tpt,i-1,savenclose,figdir);
+end
 
 %% 2.5 All models, Lin R cost function, fix gamma and alpha, s regularization
 % saveoutputs = 1;

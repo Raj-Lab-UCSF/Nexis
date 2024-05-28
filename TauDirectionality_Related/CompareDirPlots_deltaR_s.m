@@ -1,4 +1,5 @@
-function [Rmat, svals, tstats_struct] = CompareDirPlots_deltaR_s(outstruct,pertimepoint)
+function [Rmat, svals, tstats_struct] = CompareDirPlots_deltaR_s(outstruct,...
+                    pertimepoint,savenclose_,figdir_)
 
 rng(0);
 studynames = fieldnames(outstruct);
@@ -14,13 +15,9 @@ if ~pertimepoint
         for j = 1:size(Rmat,2)
             resstruct = outstruct.(studynames{i}).(modelnames{j}).nexis_global.Full;
             Rmat(i,j) = (resstruct.results.lm_Rsquared_ord)^(0.5);
-            % datavec = resstruct.data(:);
-            % predvec = resstruct.predicted(:);
-            % Rmat(i,j) = corr(datavec,predvec,'rows','complete');
             if j == 1
                 svals(i) = resstruct.param_fit(4);
             end
-            % end
         end
     end
     retind = find(ismember(modelnames,'ret'));
@@ -32,95 +29,151 @@ if ~pertimepoint
     [~,pvals,~,statss] = ttest(svals_trans);
     tstats_struct.Rdiff.pval = pvalR; tstats_struct.Rdiff.tstat = statsR.tstat;
     tstats_struct.s.pval = pvals; tstats_struct.s.tstat = statss.tstat;
-    figure; hold on;
-    cmap_boxplot = [[1 0 0]; [0 0 1]];
-    g = [1,2];
+
+    cmap_violinplot = [[1 0 0]; [0 0 1]];
     xposscatter = @(y) 0.2 * (2*rand - 1) + y;
-    xpos_R = NaN(length(Rdiffs),1); gvec_R = xpos_R;
-    xpos_s = xpos_R; gvec_s = gvec_R;
+    xpos_R = NaN(length(Rdiffs),1); 
+    % gvec_R = xpos_R;
+    xpos_s = xpos_R; 
+    % gvec_s = gvec_R;
     for i = 1:length(xpos_R)
-        xpos_R(i) = xposscatter(g(1));
-        gvec_R(i) = g(1);
+        xpos_R(i) = xposscatter(1);
+        % gvec_R(i) = 1;
     end
     for i = 1:length(xpos_s)
-        xpos_s(i) = xposscatter(g(2));
-        gvec_s(i) = g(2);
+        xpos_s(i) = xposscatter(1);
+        % gvec_s(i) = 2;
     end
-    allvals = [Rdiffs; svals];
-    gvec = [gvec_R; gvec_s];
-    b = boxplot(allvals,gvec,'Colors',cmap_boxplot,'Symbol','');
+    allvals = [Rdiffs, svals];
+    % gvec = [gvec_R, gvec_s];
+
+    figure('Units','inches','Position',[0 0 3.5 5]); hold on;
+    b = boxchart(ones(size(allvals,1),1),allvals(:,1),'BoxFaceColor',...
+        cmap_violinplot(1,:),'MarkerStyle','none');
     set(b,{'linew'},{2});
-    scatter(xpos_R,Rdiffs,[],cmap_boxplot(1,:),'filled');
-    scatter(xpos_s,svals,[],cmap_boxplot(2,:),'filled');
-    xticks([1,2]); xlim([0.5,2.5]); xticklabels({'$\Delta R_{dir}$','$s$'});    
+    % violin(Rdiffs,'facecolor',cmap_violinplot(1,:),'medc',[]);
+    scatter(xpos_R,Rdiffs,[],cmap_violinplot(1,:),'filled');
+    plot([0.5,1.5],[0 0],'k:','LineWidth',1)
+    % hLegend = findobj(gcf, 'Type', 'Legend'); hLegend.Visible = 'off';
+    xticks(1); xlim([0.5,1.5]); xticklabels({'$\Delta R_{dir}$'});    
     xaxisproperties= get(gca, 'XAxis');
     xaxisproperties.TickLabelInterpreter = 'latex';
-    yplotmax = 1; yplotmin = 0;
-    ylim([yplotmin,yplotmax]); yticks([yplotmin,(yplotmin+yplotmax)/2,yplotmax]);
-    yticklabels({'0','0.5','1'});
-    title('Longitudinal Fit');
+    yplotmax = 0.35; yplotmin = -0.05;
+    ylim([yplotmin,yplotmax]); yticks([0,0.1,0.2,0.3]);
+    yticklabels({'0','0.1','0.2','0.3'});
+    title('Longitudinal');
     set(gca,'FontSize',20,'FontName','Times');
+    if savenclose_
+        print([figdir_ filesep 'DeltaRViolin_Longitudinal'],'-dtiffn','-r300'); close;
+    end
+
+    figure('Units','inches','Position',[0 0 3.5 5]); hold on;
+    b = boxchart(ones(size(allvals,1),1),allvals(:,2),'BoxFaceColor',...
+        cmap_violinplot(2,:),'MarkerStyle','none');
+    set(b,{'linew'},{2});
+    % violin(svals,'facecolor',cmap_violinplot(2,:),'medc',[]);
+    scatter(xpos_s,svals,[],cmap_violinplot(2,:),'filled');
+    plot([0.5,1.5],[0.5 0.5],'k:','LineWidth',1)
+    % hLegend = findobj(gcf, 'Type', 'Legend'); hLegend.Visible = 'off';
+    xticks(1); xlim([0.5,1.5]); xticklabels({'$s$'});    
+    xaxisproperties= get(gca, 'XAxis');
+    xaxisproperties.TickLabelInterpreter = 'latex';
+    yplotmax = 0.9; yplotmin = 0.3;
+    ylim([yplotmin,yplotmax]); yticks([0.4,0.6,0.8]);
+    yticklabels({'0.4','0.6','0.8'});
+    title('Longitudinal');
+    set(gca,'FontSize',20,'FontName','Times');
+    if savenclose_
+        print([figdir_ filesep 'sViolin_Longitudinal'],'-dtiffn','-r300'); close;
+    end
 
 else
     tptnames = fieldnames(outstruct.(studynames{1}).(modelnames{1}));
     Rmat = NaN(length(studynames),length(modelnames)*length(tptnames)); % 4 models
+    svals = NaN(length(studynames),length(tptnames));
     for i = 1:size(Rmat,1)
         for j = 1:length(modelnames)
             resstruct = outstruct.(studynames{i}).(modelnames{j});
             for k = 1:length(tptnames)
                 resstruct_tpt = resstruct.(tptnames{k}).nexis_global.Full;
                 Rind = k + length(tptnames)*(j-1);
-                % if strcmp(RvR2,'R2')
-                %     Rmat(i,Rind) = resstruct_tpt.results.lm_Rsquared_adj;
-                % else
-                    datavec = resstruct_tpt.data(:);
-                    predvec = resstruct_tpt.predicted(:);
-                    Rmat(i,Rind) = corr(datavec,predvec,'rows','complete');
-                % end
+                Rmat(i,Rind) = (resstruct_tpt.results.lm_Rsquared_ord)^(0.5);
+                if j == 1
+                    svals(i,k) = resstruct_tpt.param_fit(4);
+                end
             end
         end
     end
+
     modelnames_ind = repmat(modelnames.',length(tptnames),1);
     modelnames_ind = modelnames_ind(:);
-    % fitsinds = find(ismember(modelnames_ind,'fit_s'));
     retinds = find(ismember(modelnames_ind,'ret'));
     antinds = find(ismember(modelnames_ind,'ant'));
-    % ndind = find(ismember(modelnames_ind,'nd'));
     Rdiffs = Rmat(:,retinds) - Rmat(:,antinds); %#ok<FNDSB>
-    adlRdiffs = Rdiffs(isadl,:); nadlRdiffs = Rdiffs(~isadl,:);
-    adlRdiffs = adlRdiffs(:); nadlRdiffs = nadlRdiffs(:);
-   
-    figure; hold on;
-    cmap_boxplot = [[1 0 0]; [0 0 1]];
-    g = [1,2];
+    Rdiffs = Rdiffs(:);
+    zdiffs = fisher_rtoz(Rdiffs);
+    svals = svals(:);
+    svals_trans = 2*(svals - 0.5); % Put on [-1,1]
+    [~,pvalR,~,statsR] = ttest(zdiffs(:));
+    [~,pvals,~,statss] = ttest(svals_trans(:));
+    tstats_struct.Rdiff.pval = pvalR; tstats_struct.Rdiff.tstat = statsR.tstat;
+    tstats_struct.s.pval = pvals; tstats_struct.s.tstat = statss.tstat;
+
+    cmap_violinplot = [[1 0 0]; [0 0 1]];
     xposscatter = @(y) 0.2 * (2*rand - 1) + y;
-    xpos_R = NaN(length(adlRdiffs),1); gvec_R = xpos_R;
-    xpos_s = NaN(length(nadlRdiffs),1); gvec_s = xpos_s;
+    xpos_R = NaN(length(Rdiffs),1); 
+    % gvec_R = xpos_R;
+    xpos_s = xpos_R; 
+    % gvec_s = gvec_R;
     for i = 1:length(xpos_R)
-        xpos_R(i) = xposscatter(g(1));
-        gvec_R(i) = g(1);
+        xpos_R(i) = xposscatter(1);
+        % gvec_R(i) = 1;
     end
     for i = 1:length(xpos_s)
-        xpos_s(i) = xposscatter(g(2));
-        gvec_s(i) = g(2);
+        xpos_s(i) = xposscatter(1);
+        % gvec_s(i) = 2;
     end
-    allvals = [adlRdiffs; nadlRdiffs];
-    gvec = [gvec_R; gvec_s];
-    b = boxplot(allvals,gvec,'Colors',cmap_boxplot,'Symbol','');
+    allvals = [Rdiffs, svals];
+    % gvec = [gvec_R, gvec_s];
+
+    figure('Units','inches','Position',[0 0 3.5 5]); hold on;
+    b = boxchart(ones(size(allvals,1),1),allvals(:,1),'BoxFaceColor',cmap_violinplot(1,:));
     set(b,{'linew'},{2});
-    scatter(xpos_R,adlRdiffs,[],cmap_boxplot(1,:),'filled');
-    scatter(xpos_s,nadlRdiffs,[],cmap_boxplot(2,:),'filled');
-    xticks([1,2]); xlim([0.5,2.5]); xticklabels({'AD like','Not AD like'});
-    yplotmax1 = max(adlRdiffs(:)); yplotmax2 = max(nadlRdiffs(:));
-    yplotmax = max([yplotmax1, yplotmax2]) + 0.05;
-    yplotmin1 = min(adlRdiffs(:)); yplotmin2 = min(nadlRdiffs(:));
-    yplotmin = min([yplotmin1, yplotmin2]) - 0.05;
-    ylim([yplotmin,yplotmax]); yticks([yplotmin,(yplotmin+yplotmax)/2,yplotmax]);
-    ytickformat('%.2f');
-    ylabel('R_r_e_t - R_a_n_t'); title('All Timepoints');
+    % violin(Rdiffs,'facecolor',cmap_violinplot(1,:),'medc',[]);
+    scatter(xpos_R,Rdiffs,[],cmap_violinplot(1,:),'filled');
+    plot([0.5,1.5],[0 0],'k:','LineWidth',1)
+    % hLegend = findobj(gcf, 'Type', 'Legend'); hLegend.Visible = 'off';
+    xticks(1); xlim([0.5,1.5]); xticklabels({'$\Delta R_{dir}$'});    
+    xaxisproperties= get(gca, 'XAxis');
+    xaxisproperties.TickLabelInterpreter = 'latex';
+    yplotmax = 0.4; yplotmin = -0.15;
+    ylim([yplotmin,yplotmax]); yticks([-0.1,0.1,0.3]);
+    yticklabels({'-0.1','0.1','0.3'});
+    title('Per Timepoint');
     set(gca,'FontSize',20,'FontName','Times');
+    if savenclose_
+        print([figdir_ filesep 'DeltaRViolin_PerTpt'],'-dtiffn','-r300'); close;
+    end
 
-
+    figure('Units','inches','Position',[0 0 3.5 5]); hold on;
+    b = boxchart(ones(size(allvals,1),1),allvals(:,2),'BoxFaceColor',...
+        cmap_violinplot(2,:),'MarkerStyle','none');
+    set(b,{'linew'},{2});
+    % violin(svals,'facecolor',cmap_violinplot(2,:),'medc',[]);
+    scatter(xpos_s,svals,[],cmap_violinplot(2,:),'filled');
+    plot([0.5,1.5],[0.5 0.5],'k:','LineWidth',1)
+    % hLegend = findobj(gcf, 'Type', 'Legend'); hLegend.Visible = 'off';
+    xticks(1); xlim([0.5,1.5]); xticklabels({'$s$'});    
+    xaxisproperties= get(gca, 'XAxis');
+    xaxisproperties.TickLabelInterpreter = 'latex';
+    yplotmax = 1.1; yplotmin = -0.1;
+    ylim([yplotmin,yplotmax]); yticks([0,0.5,1]);
+    yticklabels({'0','0.5','1'});
+    title('Per Timepoint');
+    set(gca,'FontSize',20,'FontName','Times');
+    if savenclose_
+        print([figdir_ filesep 'sViolin_PerTpt'],'-dtiffn','-r300'); close;
+    end
 
 end
 end

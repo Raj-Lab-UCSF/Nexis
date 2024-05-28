@@ -47,10 +47,10 @@ switch comparetype_
         xlim([xplotmin,xplotmax]);
         yplotmax = 1.1; yplotmin = -0.1; ylim([yplotmin,yplotmax]); 
         yticks([0,0.5,1]); yticklabels({'0','0.5','1'}); 
-        loc = 'southeast';
+        % loc = 'southeast';
         text(0.75,0.95,Rptext,'FontSize',20,'FontName','Times','Units','normalized');
         ylabel('s'); xlabel('\alpha'); title('Bias vs. Accumulation Parameters');
-        legend(plothands,studylabels,'Location',loc,'NumColumns',3,'FontSize',20);
+        % legend(plothands,studylabels,'Location',loc,'NumColumns',3,'FontSize',20);
         set(gca,'FontSize',24,'FontName','Times');
         
         if savenclose_
@@ -80,11 +80,11 @@ switch comparetype_
         xlim([xplotmin,xplotmax]);
         yplotmax = 1.1; yplotmin = -0.1; ylim([yplotmin,yplotmax]); 
         yticks([0,0.5,1]); yticklabels({'0','0.5','1'}); 
-        loc = 'southeast';
+        % loc = 'southeast';
         text(0.75,0.95,Rptext,'FontSize',20,'FontName','Times','Units','normalized');
         
         ylabel('s'); xlabel('\beta'); title('Bias vs. Spread Parameters');
-        legend(plothands,studylabels,'Location',loc,'NumColumns',3,'FontSize',20);
+        % legend(plothands,studylabels,'Location',loc,'NumColumns',3,'FontSize',20);
         set(gca,'FontSize',24,'FontName','Times');
         
         if savenclose_

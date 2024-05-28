@@ -43,7 +43,7 @@ for i = 1:length(studynames_)
     end
 end
 
-cmap = hsv(length(modelnames));
+cmap = cool(length(modelnames));
 figure('Units','inches','Position',[0 0 18 15]);
 tl = tiledlayout(3,4);
 for i = 1:length(studynames_)
@@ -75,7 +75,11 @@ for i = 1:length(studynames_)
     end
     title(studylabels{i});
     set(gca,'FontName','Times','FontSize',20,'box','on');
-    legend(legnams,'Location','southwest','FontSize',18)
+    if i == 1
+        legend(legnams,'Location','northwest','FontSize',17)
+    else
+        legend(legnams{1},'Location','southwest','FontSize',17)
+    end
 end
 xlabel(tl, 't (Months)', 'FontSize', 24, 'FontName', 'Times', 'FontWeight', 'bold');
 ylabel(tl, 'R', 'FontSize', 24, 'FontName', 'Times', 'FontWeight', 'bold');
