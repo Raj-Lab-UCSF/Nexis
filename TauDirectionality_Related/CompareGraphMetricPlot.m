@@ -118,7 +118,7 @@ ttest_struct.Paired.tstat = ttests2;
 ttest_struct.Paired.pvals = pvals2*3;
 
 % Create boxplots
-figure('Units','inches','Position',[0 0 10 8]); hold on;
+figure('Units','inches','Position',[0 0 13 8.5]); hold on;
 % xpos_mat = NaN(size(Rmat)); 
 % gbox = xpos_mat; g = studynames_ind;
 % coffset1 = 0.05; coffset2 = 0.1; coffset3 = 0.7;
@@ -159,12 +159,12 @@ xaxisproperties.TickLabelInterpreter = 'latex';
 yplotmax = 0.85; yplotmin = -0.4;
 % yplotmax = max(Rvec) + 0.05; yplotmin = min(Rvec) - 0.05;
 ylim([yplotmin,yplotmax]);
-yticks([-0.3,0,0.3,0.6]);
-yticklabels({'-0.3','0','0.3','0.6'});
-ylabel("Pearson's R"); 
-set(gca,'FontSize',24,'FontName','Times');
+yticks([-0.4,0,0.4,0.8]);
+yticklabels({'-0.4','0','0.4','0.8'});
+ylabel("R"); 
+set(gca,'FontSize',28,'FontName','Times');
 
 if savenclose_
-    print([figdir_ filesep 'NoModelBoxplots'],'-dtiffn','-r300'); close;
+    print([figdir_ filesep 'NoModelViolins'],'-dtiffn','-r300'); close;
 end
 end

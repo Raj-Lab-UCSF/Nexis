@@ -46,6 +46,7 @@ end
 cmap = cool(length(modelnames));
 figure('Units','inches','Position',[0 0 18 15]);
 tl = tiledlayout(3,4);
+nexttile;
 for i = 1:length(studynames_)
     nexttile; hold on;
     mins_i = NaN(1,length(modelnames)); maxs_i = mins_i;

@@ -21,7 +21,7 @@ end
 
 cmap = hsv(length(studynames));
 shapes = {'o','s','d','^','v','<','>','p','h','+','x'};
-figure('Units','inches','Position',[0 0 11 10]); hold on;
+figure('Units','inches','Position',[0 0 8 7]); hold on;
 plothands = {};
 switch comparetype_
     case 'alpha_s'
@@ -38,7 +38,7 @@ switch comparetype_
         fill([x_lm; flipud(x_lm)],[y_ci(:,1); flipud(y_ci(:,2))],[1 0 0.25],...
             'EdgeColor','none','FaceAlpha',0.15);
         plot(x_lm,y_lm,'k','LineWidth',2);
-        Rptext = sprintf(['R^2 = %.2f,' newline 'p = %.1d'],...
+        Rptext = sprintf(['R^2 = %.2f' newline 'p = %.1d'],...
                     lm.Rsquared.Adjusted,lm.ModelFitVsNullModel.Pvalue);
         
         xplotmax = 1.1*max(alpha_mat(:)); xplotmin = 0;
@@ -48,10 +48,10 @@ switch comparetype_
         yplotmax = 1.1; yplotmin = -0.1; ylim([yplotmin,yplotmax]); 
         yticks([0,0.5,1]); yticklabels({'0','0.5','1'}); 
         % loc = 'southeast';
-        text(0.75,0.95,Rptext,'FontSize',20,'FontName','Times','Units','normalized');
-        ylabel('s'); xlabel('\alpha'); title('Bias vs. Accumulation Parameters');
+        text(0.7,0.9,Rptext,'FontSize',22,'FontName','Times','Units','normalized');
+        ylabel('s (Bias)'); xlabel('\alpha (Accumulation Rate)');
         % legend(plothands,studylabels,'Location',loc,'NumColumns',3,'FontSize',20);
-        set(gca,'FontSize',24,'FontName','Times');
+        set(gca,'FontSize',24,'FontName','Times','box','on');
         
         if savenclose_
             print([figdir_ filesep 'salpha_plot'],'-dtiffn','-r300'); close;
@@ -71,7 +71,7 @@ switch comparetype_
         fill([x_lm; flipud(x_lm)],[y_ci(:,1); flipud(y_ci(:,2))],[1 0 0.25],...
             'EdgeColor','none','FaceAlpha',0.15);
         plot(x_lm,y_lm,'k','LineWidth',2);
-        Rptext = sprintf(['R^2 = %.2f,' newline 'p = %.1d'],...
+        Rptext = sprintf(['R^2 = %.2f' newline 'p = %.1d'],...
                     lm.Rsquared.Adjusted,lm.ModelFitVsNullModel.Pvalue);
         
         xplotmax = 1.1*max(beta_mat(:)); xplotmin = 0;
@@ -80,48 +80,48 @@ switch comparetype_
         xlim([xplotmin,xplotmax]);
         yplotmax = 1.1; yplotmin = -0.1; ylim([yplotmin,yplotmax]); 
         yticks([0,0.5,1]); yticklabels({'0','0.5','1'}); 
-        % loc = 'southeast';
-        text(0.75,0.95,Rptext,'FontSize',20,'FontName','Times','Units','normalized');
+        loc = 'southeast';
+        text(0.7,0.9,Rptext,'FontSize',22,'FontName','Times','Units','normalized');
         
-        ylabel('s'); xlabel('\beta'); title('Bias vs. Spread Parameters');
-        % legend(plothands,studylabels,'Location',loc,'NumColumns',3,'FontSize',20);
-        set(gca,'FontSize',24,'FontName','Times');
+        ylabel('s (Bias)'); xlabel('\beta (Spread Rate)');
+        legend(plothands,studylabels,'Location',loc,'NumColumns',2,'FontSize',20,'box','off');
+        set(gca,'FontSize',24,'FontName','Times','box','on');
         
         if savenclose_
             print([figdir_ filesep 'sbeta_plot'],'-dtiffn','-r300'); close;
         end
 
-    case 'alpha_beta'
+    case 'beta_alpha'
         for i = 1:length(studynames)
-            s = scatter(alpha_mat(i,:),beta_mat(i,:),75,shapes{i},...
+            s = scatter(beta_mat(i,:),alpha_mat(i,:),75,shapes{i},...
                 'MarkerFaceColor',cmap(i,:),'MarkerEdgeColor',cmap(i,:),...
                 'MarkerFaceAlpha',0.3);
             plothands = [plothands,s];
         end
-        lm = fitlm(alpha_mat(:),beta_mat(:));
-        x_lm = linspace(0,1.5*max(alpha_mat(:)),100).'; 
+        lm = fitlm(beta_mat(:),alpha_mat(:));
+        x_lm = linspace(0,1.5*max(beta_mat(:)),100).'; 
         [y_lm, y_ci] = predict(lm, x_lm);
         plot(x_lm,y_ci(:,1),'k:'); plot(x_lm,y_ci(:,2),'k:'); 
         fill([x_lm; flipud(x_lm)],[y_ci(:,1); flipud(y_ci(:,2))],[1 0 0.25],...
             'EdgeColor','none','FaceAlpha',0.15);
         plot(x_lm,y_lm,'k','LineWidth',2);
-        Rptext = sprintf(['R^2 = %.2f,' newline 'p = %.1d'],...
+        Rptext = sprintf(['R^2 = %.2f' newline 'p = %.1d'],...
                     lm.Rsquared.Adjusted,lm.ModelFitVsNullModel.Pvalue);
         
-        xplotmax = 1.1*max(alpha_mat(:)); xplotmin = 0;
-        xticks([0,max(alpha_mat(:))/2,max(alpha_mat(:))]);
-        xticklabels({'0',num2str(max(alpha_mat(:))/2,'%.1f'),num2str(max(alpha_mat(:)),'%.1f')}); 
+        xplotmax = 1.1*max(beta_mat(:)); xplotmin = 0;
+        xticks([0,max(beta_mat(:))/2,max(beta_mat(:))]);
+        xticklabels({'0',num2str(max(beta_mat(:))/2,'%.1f'),num2str(max(beta_mat(:)),'%.1f')}); 
         xlim([xplotmin,xplotmax]);
-        yplotmax = 1.1*max(beta_mat(:)); yplotmin = 0;
-        yticks([0,max(beta_mat(:))/2,max(beta_mat(:))]);
-        yticklabels({'0',num2str(max(beta_mat(:))/2,'%.1f'),num2str(max(beta_mat(:)),'%.1f')}); 
+        yplotmax = 1.1*max(alpha_mat(:)); yplotmin = 0;
+        yticks([0,max(alpha_mat(:))/2,max(alpha_mat(:))]);
+        yticklabels({'0',num2str(max(alpha_mat(:))/2,'%.1f'),num2str(max(alpha_mat(:)),'%.1f')}); 
         ylim([yplotmin,yplotmax]);
-        loc = 'northwest';
-        text(0.75,0.1,Rptext,'FontSize',20,'FontName','Times','Units','normalized');
+        % loc = 'northwest';
+        text(0.75,0.1,Rptext,'FontSize',22,'FontName','Times','Units','normalized');
         
-        ylabel('\beta'); xlabel('\alpha'); title('Spread vs. Accumulation Parameters');
-        legend(plothands,studylabels,'Location',loc,'NumColumns',3,'FontSize',19);
-        set(gca,'FontSize',24,'FontName','Times');
+        xlabel('\beta (Spread Rate)'); ylabel('\alpha (Accumulation Rate)');
+        % legend(plothands,studylabels,'Location',loc,'NumColumns',1,'FontSize',17,'box','off');
+        set(gca,'FontSize',24,'FontName','Times','box','on');
         
         if savenclose_
             print([figdir_ filesep 'alpha_beta_plot'],'-dtiffn','-r300'); close;

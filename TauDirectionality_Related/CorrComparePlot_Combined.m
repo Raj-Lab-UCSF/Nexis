@@ -66,7 +66,7 @@ inds_cols = repmat(1:4,44,1);
 inds_cols = inds_cols(:);
 offsets = [-0.3,-0.1,0.1,0.3];
 legstr = [];
-figure('Units','inches','Position',[0 0 18 8]); hold on;
+figure('Units','inches','Position',[0 0 18 6]); hold on;
 for i = 1:length(modelnames)
     for j = 1:length(xposvec)
         ind_shape = mod(j,(length(tptnames)+1));

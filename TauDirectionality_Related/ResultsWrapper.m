@@ -42,7 +42,7 @@ end
 dataset_bf = 'IbaStrInj';
 tptsplot = 3;
 seedconntypes = {'In','Out'};
-savenclose = 0;
+savenclose = 1;
 for i = 1:length(seedconntypes)
     BrainframeSeedConnectivityPlot(mousedata_struct,dataset_bf,tptsplot,...
         C,seedconntypes{i},matdir,savenclose,figdir);
@@ -107,8 +107,8 @@ pertpt = 0;
 tpt_plot = 3; % vs. last time point
 datset_bf = 'IbaStrInj';
 
-RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
-% [R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all,pertept,savenclose,figdir);
+% RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
+[R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all,pertpt,savenclose,figdir);
 % save([output_dir filesep 'CompareDirLong.mat'],'R','s','tstatstruct');
 % BrainframeModelPredPlot(outputs_all,datset_bf,matdir,savenclose,figdir);
 
@@ -179,15 +179,15 @@ pertpt = 1;
 %     PerTimepointPlot_sbeta(outputs_all_tpt,i-1);
 %     DirectionalityVsTimePlot(outputs_all_tpt,i-1,dirmets{i})
 % end
-[R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all_tpt,pertpt,savenclose,figdir);
-save([output_dir filesep 'CompareDirPerTpt.mat'],'R','s','tstatstruct');
+% [R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all_tpt,pertpt,savenclose,figdir);
+% save([output_dir filesep 'CompareDirPerTpt.mat'],'R','s','tstatstruct');
 plottypes = {'alpha_s','beta_s','alpha_beta'};
 for i = 1:length(plottypes)
     [amat,bmat,smat] = salphabetaPlot(outputs_all_tpt,plottypes{i},savenclose,figdir);
 end
-for i = 1:2
-    CorrComparePlot_Combined(outputs_all,outputs_all_tpt,i-1,savenclose,figdir);
-end
+% for i = 1:2
+%     CorrComparePlot_Combined(outputs_all,outputs_all_tpt,i-1,savenclose,figdir);
+% end
 
 %% 2.5 All models, Lin R cost function, fix gamma and alpha, s regularization
 % saveoutputs = 1;

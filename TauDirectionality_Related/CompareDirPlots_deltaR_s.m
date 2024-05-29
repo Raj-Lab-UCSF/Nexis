@@ -31,7 +31,7 @@ if ~pertimepoint
     tstats_struct.s.pval = pvals; tstats_struct.s.tstat = statss.tstat;
 
     cmap_violinplot = [[1 0 0]; [0 0 1]];
-    xposscatter = @(y) 0.2 * (2*rand - 1) + y;
+    xposscatter = @(y) 0.05 * (2*rand - 1) + y;
     xpos_R = NaN(length(Rdiffs),1); 
     % gvec_R = xpos_R;
     xpos_s = xpos_R; 
@@ -47,42 +47,42 @@ if ~pertimepoint
     allvals = [Rdiffs, svals];
     % gvec = [gvec_R, gvec_s];
 
-    figure('Units','inches','Position',[0 0 3.5 5]); hold on;
+    figure('Units','inches','Position',[0 0 2 5]); hold on;
     b = boxchart(ones(size(allvals,1),1),allvals(:,1),'BoxFaceColor',...
-        cmap_violinplot(1,:),'MarkerStyle','none');
+        cmap_violinplot(1,:),'MarkerStyle','none','BoxWidth',0.2);
     set(b,{'linew'},{2});
     % violin(Rdiffs,'facecolor',cmap_violinplot(1,:),'medc',[]);
     scatter(xpos_R,Rdiffs,[],cmap_violinplot(1,:),'filled');
     plot([0.5,1.5],[0 0],'k:','LineWidth',1)
     % hLegend = findobj(gcf, 'Type', 'Legend'); hLegend.Visible = 'off';
-    xticks(1); xlim([0.5,1.5]); xticklabels({'$\Delta R_{dir}$'});    
+    xticks(1); xlim([0.85,1.15]); xticklabels({'$\Delta R_{dir}$'});    
     xaxisproperties= get(gca, 'XAxis');
     xaxisproperties.TickLabelInterpreter = 'latex';
     yplotmax = 0.35; yplotmin = -0.05;
     ylim([yplotmin,yplotmax]); yticks([0,0.1,0.2,0.3]);
     yticklabels({'0','0.1','0.2','0.3'});
     title('Longitudinal');
-    set(gca,'FontSize',20,'FontName','Times');
+    set(gca,'FontSize',20,'FontName','Times','box','on');
     if savenclose_
         print([figdir_ filesep 'DeltaRViolin_Longitudinal'],'-dtiffn','-r300'); close;
     end
 
-    figure('Units','inches','Position',[0 0 3.5 5]); hold on;
+    figure('Units','inches','Position',[0 0 2 5]); hold on;
     b = boxchart(ones(size(allvals,1),1),allvals(:,2),'BoxFaceColor',...
-        cmap_violinplot(2,:),'MarkerStyle','none');
+        cmap_violinplot(2,:),'MarkerStyle','none','BoxWidth',0.2);
     set(b,{'linew'},{2});
     % violin(svals,'facecolor',cmap_violinplot(2,:),'medc',[]);
     scatter(xpos_s,svals,[],cmap_violinplot(2,:),'filled');
     plot([0.5,1.5],[0.5 0.5],'k:','LineWidth',1)
     % hLegend = findobj(gcf, 'Type', 'Legend'); hLegend.Visible = 'off';
-    xticks(1); xlim([0.5,1.5]); xticklabels({'$s$'});    
+    xticks(1); xlim([0.85,1.15]); xticklabels({'$s$'});    
     xaxisproperties= get(gca, 'XAxis');
     xaxisproperties.TickLabelInterpreter = 'latex';
     yplotmax = 0.9; yplotmin = 0.3;
     ylim([yplotmin,yplotmax]); yticks([0.4,0.6,0.8]);
     yticklabels({'0.4','0.6','0.8'});
     title('Longitudinal');
-    set(gca,'FontSize',20,'FontName','Times');
+    set(gca,'FontSize',20,'FontName','Times','box','on');
     if savenclose_
         print([figdir_ filesep 'sViolin_Longitudinal'],'-dtiffn','-r300'); close;
     end
@@ -120,7 +120,7 @@ else
     tstats_struct.s.pval = pvals; tstats_struct.s.tstat = statss.tstat;
 
     cmap_violinplot = [[1 0 0]; [0 0 1]];
-    xposscatter = @(y) 0.2 * (2*rand - 1) + y;
+    xposscatter = @(y) 0.1 * (2*rand - 1) + y;
     xpos_R = NaN(length(Rdiffs),1); 
     % gvec_R = xpos_R;
     xpos_s = xpos_R; 
@@ -136,41 +136,41 @@ else
     allvals = [Rdiffs, svals];
     % gvec = [gvec_R, gvec_s];
 
-    figure('Units','inches','Position',[0 0 3.5 5]); hold on;
-    b = boxchart(ones(size(allvals,1),1),allvals(:,1),'BoxFaceColor',cmap_violinplot(1,:));
+    figure('Units','inches','Position',[0 0 2 5]); hold on;
+    b = boxchart(ones(size(allvals,1),1),allvals(:,1),'BoxFaceColor',cmap_violinplot(1,:),'BoxWidth',0.2);
     set(b,{'linew'},{2});
     % violin(Rdiffs,'facecolor',cmap_violinplot(1,:),'medc',[]);
     scatter(xpos_R,Rdiffs,[],cmap_violinplot(1,:),'filled');
     plot([0.5,1.5],[0 0],'k:','LineWidth',1)
     % hLegend = findobj(gcf, 'Type', 'Legend'); hLegend.Visible = 'off';
-    xticks(1); xlim([0.5,1.5]); xticklabels({'$\Delta R_{dir}$'});    
+    xticks(1); xlim([0.85,1.15]); xticklabels({'$\Delta R_{dir}$'});    
     xaxisproperties= get(gca, 'XAxis');
     xaxisproperties.TickLabelInterpreter = 'latex';
     yplotmax = 0.4; yplotmin = -0.15;
     ylim([yplotmin,yplotmax]); yticks([-0.1,0.1,0.3]);
-    yticklabels({'-0.1','0.1','0.3'});
+    yticklabels({'0.1','0.1','0.3'}); % change in ppt
     title('Per Timepoint');
-    set(gca,'FontSize',20,'FontName','Times');
+    set(gca,'FontSize',20,'FontName','Times','box','on');
     if savenclose_
         print([figdir_ filesep 'DeltaRViolin_PerTpt'],'-dtiffn','-r300'); close;
     end
 
-    figure('Units','inches','Position',[0 0 3.5 5]); hold on;
+    figure('Units','inches','Position',[0 0 2 5]); hold on;
     b = boxchart(ones(size(allvals,1),1),allvals(:,2),'BoxFaceColor',...
-        cmap_violinplot(2,:),'MarkerStyle','none');
+        cmap_violinplot(2,:),'MarkerStyle','none','BoxWidth',0.2);
     set(b,{'linew'},{2});
     % violin(svals,'facecolor',cmap_violinplot(2,:),'medc',[]);
     scatter(xpos_s,svals,[],cmap_violinplot(2,:),'filled');
     plot([0.5,1.5],[0.5 0.5],'k:','LineWidth',1)
     % hLegend = findobj(gcf, 'Type', 'Legend'); hLegend.Visible = 'off';
-    xticks(1); xlim([0.5,1.5]); xticklabels({'$s$'});    
+    xticks(1); xlim([0.85,1.15]); xticklabels({'$s$'});    
     xaxisproperties= get(gca, 'XAxis');
     xaxisproperties.TickLabelInterpreter = 'latex';
     yplotmax = 1.1; yplotmin = -0.1;
     ylim([yplotmin,yplotmax]); yticks([0,0.5,1]);
     yticklabels({'0','0.5','1'});
     title('Per Timepoint');
-    set(gca,'FontSize',20,'FontName','Times');
+    set(gca,'FontSize',20,'FontName','Times','box','on');
     if savenclose_
         print([figdir_ filesep 'sViolin_PerTpt'],'-dtiffn','-r300'); close;
     end
