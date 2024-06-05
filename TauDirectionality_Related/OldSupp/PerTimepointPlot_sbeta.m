@@ -1,4 +1,4 @@
-function PerTimepointPlot_sbeta(outstruct,usebeta)
+function PerTimepointPlot_sbeta(outstruct,usebeta,savenclose_,figdir_)
 
 rng(0);
 studynames = fieldnames(outstruct);
@@ -41,19 +41,28 @@ end
 xticks([0,3,6,9]); xlim([0,10]); xlabel('Time (Months)')
 if usebeta
     ylabel('\beta');
-    yplotmax = 1.1*max(sbetavals(:)); yplotmin = 0; 
-    ylim([yplotmin,yplotmax]); yticks([0,yplotmax/2,yplotmax]); 
-    yticklabels({'0',num2str(yplotmax/2,'%.2f'),num2str(yplotmax,'%.2f')}); 
-    title('Progression of diffusivity constant')
+    yplotmax = max(sbetavals(:)); yplotmin = min(sbetavals(:));
+    ytickvec = [yplotmin,(yplotmax+yplotmin)/2,yplotmax];
+    ylim([1.1*yplotmin,1.25*yplotmax]); yticks(ytickvec); 
+    yticklabels({num2str(ytickvec(1),'%.2f'),num2str(ytickvec(2),'%.2f'),num2str(ytickvec(3),'%.2f')}); 
+    % title('Progression of diffusivity constant')
     loc = 'northeast';
 else
     ylabel('s');
     yplotmax = 1.1; yplotmin = -0.1; ylim([yplotmin,yplotmax]); 
     yticks([0,0.5,1]); yticklabels({'0','0.5','1'}); 
-    title('Progression of directionality bias')
+    % title('Progression of directionality bias')
     loc = 'southeast';
 end
 legend(plothands,studylabels,'Location',loc,'NumColumns',3,'FontSize',20,'box','off');
-set(gca,'FontSize',24,'FontName','Times');
+set(gca,'FontSize',24,'FontName','Times','box','on');
+
+if savenclose_
+    if usebeta
+        print([figdir_ filesep 'pertimepointplot_beta'],'-dtiffn','-r300'); close;
+    else
+        print([figdir_ filesep 'pertimepointplot_s'],'-dtiffn','-r300'); close;
+    end
+end
 
 end

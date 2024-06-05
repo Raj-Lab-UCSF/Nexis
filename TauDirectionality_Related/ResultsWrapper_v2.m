@@ -13,7 +13,7 @@ C = Connectomes.default;
 %% 1. Model-free analysis
 %% 1.1 Graph metric analyses
 studynames_plot = {'IbaStrInj'};
-savenclose = 1;
+savenclose = 0;
 whichplots = {'C_seed','All'};
 tpt_flag = 'All';
 for i = 1:length(studynames_plot)
@@ -177,10 +177,13 @@ pertpt = 1;
 
 % [R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all_tpt,pertpt,savenclose,figdir);
 % save([output_dir filesep 'CompareDirPerTpt.mat'],'R','s','tstatstruct');
-plottypes = {'alpha_s','beta_s','beta_alpha'};
-for i = 1:length(plottypes)
-    [amat,bmat,smat] = salphabetaPlot(outputs_all_tpt,plottypes{i},savenclose,figdir);
-end
-% for i = 1:2
-%     CorrComparePlot_Combined(outputs_all,outputs_all_tpt,i-1,savenclose,figdir);
+% plottypes = {'alpha_s','beta_s','beta_alpha'};
+% for i = 1:length(plottypes)
+%     [amat,bmat,smat] = salphabetaPlot(outputs_all_tpt,plottypes{i},savenclose,figdir);
 % end
+
+for i = 1:2
+    PerTimepointPlot_sbeta(outputs_all_tpt,i-1,savenclose,figdir);
+    PerTimepointRegressionPlot_sbeta(outputs_all_tpt,i-1,savenclose,figdir);
+%     CorrComparePlot_Combined(outputs_all,outputs_all_tpt,i-1,savenclose,figdir);
+end
