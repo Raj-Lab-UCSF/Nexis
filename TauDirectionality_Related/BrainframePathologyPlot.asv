@@ -24,10 +24,10 @@ if isnumeric(tptsplotinds_)
 end
 
 for k = 1:size(datinput_data,2)
-    datinput_k = datinput_data(:,k);
+    datinput_k = logdatinput_data(:,k);
     nany = isnan(datinput_k);
     datinput_k(nany) = 0;
-    xfac = 0.35*max(datinput_k)/max(datinput_data(~nany,1));
+    xfac = 0.5*log(1+max(datinput_k)/max(datinput_data(~nany,1)));
     reggroups_data = zeros(length(reggroups_),1);
     cmap_data = zeros(length(unique(reggroups_))*ngrad,3);
     for i = 1:length(unique(reggroups_))

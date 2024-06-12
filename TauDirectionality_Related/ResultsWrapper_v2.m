@@ -31,6 +31,7 @@ AMBCAHeatmap(C,savenclose,figdir);
 
 %% 1.3 Pathology brainframes, all timepoints
 datasets_bf = studynames;
+% datasets_bf = {'IbaStrInj'};
 tptsplot = 'All';
 savenclose = 1;
 for i = 1:length(datasets_bf)
@@ -107,9 +108,9 @@ pertpt = 0;
 tpt_plot = 3; % vs. last time point
 datset_bf = 'IbaStrInj';
 
-RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
-[R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all,pertpt,savenclose,figdir);
-save([output_dir filesep 'CompareDirLong.mat'],'R','s','tstatstruct');
+% RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
+% [R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all,pertpt,savenclose,figdir);
+% save([output_dir filesep 'CompareDirLong.mat'],'R','s','tstatstruct');
 BrainframeModelPredPlot(outputs_all,datset_bf,matdir,savenclose,figdir);
 
 %% 2.3 Per-timepoint models, Lin R cost function, fix gamma and alpha
