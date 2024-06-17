@@ -188,3 +188,50 @@ for i = 1:2
     PerTimepointRegressionPlot_sbeta(outputs_all_tpt,i-1,savenclose,figdir);
 %     CorrComparePlot_Combined(outputs_all,outputs_all_tpt,i-1,savenclose,figdir);
 end
+
+%% 2.5 Longitudinal models, bootstrapping
+% Input parameters
+saveoutputs = 1;
+filename_out = 'outputs_all_bs';
+outputs_all = struct;
+modelnames = {'fit_s'};
+use_dataspace = 1;
+w_dir = 1;
+volcorrect = 1;
+bootstrapping = 1;
+niters = 100;
+exclseed_outputs = 0;
+param_init = [NaN,0.5,1,0.5];
+
+% Run NexIS_global
+for i = 1:length(studynames)
+    tablename = [filename_out '_' studynames{i}];
+    sumtable = [];
+    ub = [Inf,Inf,Inf,1]; ubs = repmat(ub,4,1); ubs(:,end) = [1,1,0,0.5].';
+    lb = [0,0,0,0]; lbs = repmat(lb,4,1); lbs(:,end) = [0,1,0,0.5].';
+    for j = 1:length(modelnames)
+        fprintf('Study %d of %d, Model %s\n',i,length(studynames),modelnames{j})
+        outputs = NexIS_global('study',studynames{i},...
+                                'w_dir',w_dir,...
+                                'volcorrect',volcorrect,...
+                                'param_init',param_init,...
+                                'ub',ubs(j,:),...
+                                'lb',lbs(j,:),...
+                                'use_dataspace',use_dataspace,...
+                                'costfun','linr',...
+                                'bootstrapping',bootstrapping,...
+                                'niters',niters,...
+                                'exclseed_outputs',exclseed_outputs);
+        outputs_all.(studynames{i}).(modelnames{j}) = outputs;
+        sumtable_i = Output2Table(outputs,0,'null','null');
+        sumtable_i.Properties.RowNames{1} = modelnames{j};
+        sumtable = [sumtable; sumtable_i];
+    end
+    if saveoutputs
+        writetable(sumtable,[output_dir filesep tablename '.csv'],'WriteRowNames',true)
+    end
+end
+if saveoutputs
+    save([output_dir filesep filename_out '.mat'],'outputs_all');
+end
+
