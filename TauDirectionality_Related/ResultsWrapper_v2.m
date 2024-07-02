@@ -189,10 +189,10 @@ for i = 1:2
 %     CorrComparePlot_Combined(outputs_all,outputs_all_tpt,i-1,savenclose,figdir);
 end
 
-%% 2.5 Longitudinal models, bootstrapping
+%% 2.5.1 Longitudinal models, bootstrapping
 % Input parameters
 saveoutputs = 1;
-filename_out = 'outputs_all_bs';
+filename_out = 'outputs_all_bs_new';
 outputs_all = struct;
 modelnames = {'fit_s'};
 use_dataspace = 1;
@@ -235,3 +235,18 @@ if saveoutputs
     save([output_dir filesep filename_out '.mat'],'outputs_all');
 end
 
+%% 2.6 Figure per 2.3
+preload = 1;
+filename_out_bs = 'outputs_all_bs_new';
+filename_out = 'outputs_all';
+if preload
+    load([output_dir filesep filename_out_bs '.mat'],'outputs_all');
+    outputs_all_bs = outputs_all;
+    load([output_dir filesep filename_out '.mat'],'outputs_all');
+end
+paramnames = {'alpha','beta','s','R'};
+savenclose = 0;
+for i = 1:length(paramnames)
+    BootstrappingPlotter_NexIS_1param(outputs_all_bs,outputs_all,paramnames{i},...
+        'fit_s',savenclose,figdir);
+end
