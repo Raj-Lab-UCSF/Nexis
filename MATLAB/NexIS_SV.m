@@ -9,7 +9,7 @@ function outputs = NexIS_SV(varargin)
 % param(6) = p
 
 % Define defaults and set inputs
-study_ = 'User-specified'; 
+study_ = 'User-specified'; % double-check this
 C_ = [];
 data_ = [];
 tpts_ = [];
@@ -43,14 +43,14 @@ niters_ = 100;
 verbose_ = 0;
 fmindisplay_ = 0;
 outputs_nexisglobal_ = [];
-bounds_type_nexis_sv_ = 'old'; % 'old', 'CI_X' where X is the percent
+bounds_type_nexis_sv_ = 'old'; % 'old', 'CI_X' where X is the percent ADD FUNCTIONALITY FOR FIXED 
 bootstrapping_nexis_sv_ = 0;
 resample_rate_nexis_sv_ = 0.8;
 niters_nexis_sv_ = 100;
 verbose_nexis_sv_ = 0;
 fmindisplay_nexis_sv_ = 0;
 datatype_nexis_sv_ = 'gene'; % 'gene', 'ct_tasic', 'ct_zeisel', 'ct_yao'
-datalist_nexis_sv_ = 3578; % index for Trem2
+datalist_nexis_sv_ = 3578; % index for Trem2; requires a cell array even for one element if names are used
 datapca_nexis_sv_ = 0;
 flowthresh_ = 99.93;
 

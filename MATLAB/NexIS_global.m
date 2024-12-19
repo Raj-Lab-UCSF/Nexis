@@ -6,7 +6,7 @@ function outputs = NexIS_global(varargin)
 % param(4) = s
 
 % Define defaults and set inputs
-study_ = 'User-specified'; 
+study_ = 'User-specified'; % double-check this
 C_ = [];
 data_ = [];
 tpts_ = [];

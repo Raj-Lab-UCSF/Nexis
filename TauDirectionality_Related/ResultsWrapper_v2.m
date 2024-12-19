@@ -43,7 +43,7 @@ end
 dataset_bf = 'IbaStrInj';
 tptsplot = 3;
 seedconntypes = {'In','Out'};
-savenclose = 1;
+savenclose = 0;
 for i = 1:length(seedconntypes)
     BrainframeSeedConnectivityPlot(mousedata_struct,dataset_bf,tptsplot,...
         C,seedconntypes{i},matdir,savenclose,figdir);
@@ -103,13 +103,13 @@ filename_out = 'outputs_all';
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all');
 end
-savenclose = 1;
+savenclose = 0;
 pertpt = 0;
 tpt_plot = 3; % vs. last time point
 datset_bf = 'IbaStrInj';
 
-% RvstPlots(outputs_all,tpt_plot,usefits,matdir,savenclose,figdir);
-% [R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all,pertpt,savenclose,figdir);
+RvstPlots(outputs_all,tpt_plot,1,matdir,savenclose,figdir);
+[R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all,pertpt,savenclose,figdir);
 % save([output_dir filesep 'CompareDirLong.mat'],'R','s','tstatstruct');
 BrainframeModelPredPlot(outputs_all,datset_bf,matdir,savenclose,figdir);
 
