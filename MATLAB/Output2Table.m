@@ -47,10 +47,9 @@ columnnames{end+1} = 'alpha (Mean)'; vartypes{end+1} = 'double';
 columnnames{end+1} = 'alpha (95% CI)'; vartypes{end+1} = 'cell';
 columnnames{end+1} = 'beta (Mean)'; vartypes{end+1} = 'double';
 columnnames{end+1} = 'beta (95% CI)'; vartypes{end+1} = 'cell';
-if logical(outputs.(fldnames{1}).Full.init.w_dir)    
-    columnnames{end+1} = 's (Mean)'; vartypes{end+1} = 'double';
-    columnnames{end+1} = 's (95% CI)'; vartypes{end+1} = 'cell';
-end
+columnnames{end+1} = 's (Mean)'; vartypes{end+1} = 'double';
+columnnames{end+1} = 's (95% CI)'; vartypes{end+1} = 'cell';
+
 if ismember('endm',fldnames) && (length(outputs.endm.Full.init.datalist_endm)>1)...
         && ~logical(outputs.endm.Full.init.datapca_endm)
     for i = 1:length(outputs.endm.Full.init.datalist_endm)
@@ -124,9 +123,9 @@ for k = 1:length(rownames)
     if length(subfldnames) == 1
         params = outputs.(fldnames{k}).Full.param_fit;
         inclinds = 1:length(params);
-        if ~logical(outputs.(fldnames{k}).Full.init.w_dir)
-            inclinds(4) = NaN;
-        end
+        % if ~logical(outputs.(fldnames{k}).Full.init.w_dir)
+        %     inclinds(4) = NaN;
+        % end
         % if strcmp('endm',fldnames{k}) && (length(outputs.endm.Full.init.datalist_endm)>1)  && ...
         %         ~logical(outputs.endm.Full.init.datapca_endm)
         %     inclinds(5:(4+length(outputs.endm.Full.init.datalist_endm))) = NaN;
