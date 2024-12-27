@@ -300,22 +300,27 @@ if ~logical(ipR.bootstrapping_nexis_sv)
         end    
     end
 
-    if strcmp(ipR.bounds_type_nexis_sv,'old') && (size(param_inits,1) > 1)
-        param_init = mean(param_inits);
+    if strcmp(ipR.bounds_type_nexis_sv,'none') && (size(param_inits,1) > 1)
+        param_init = median(param_inits); % Was originally mean, median probably better estimator
+        ub = param_init; % fix all global parameters
+        lb = param_init; % fix all global parameters
+    elseif strcmp(ipR.bounds_type_nexis_sv,'unconstrained') && (size(param_inits,1) > 1)
+        param_init = median(param_inits); % Was originally mean, median probably better estimator
         ub = [param_init(1),Inf,Inf,1,0,0]; % fix gamma, unconstrain others
         lb = [param_init(1),0,0,0,0,0]; % fix gamma, unconstrain others;
+    elseif strcmp(ipR.bounds_type_nexis_sv,'old') && (size(param_inits,1) > 1)
+        param_init = mean(param_inits); % Was originally mean, median probably better estimator
+        ub = [1.3*param_init(1:4),0,0]; % Vary within +/- 30%
+        lb = [0.7*param_init(1:4),0,0]; % Vary within +/- 30%
     elseif (size(param_inits,1) == 1)
         param_init = param_inits;
         ub = [param_init(1),10*param_init(2),10*param_init(3),1,0,0]; % fix gamma, very loosely constrain others;
         lb = [param_init(1),0.1*param_init(2),0.1*param_init(3),0,0,0]; % fix gamma, very loosely constrain others;
-        % param_init = param_inits;
-        % ub = 1.5*param_inits; % fix gamma, unconstrain others
-        % lb = 0.5*param_inits; % fix gamma, unconstrain others;
     else
         prct = str2double(ipR.bounds_type_nexis_sv(4:end));
         param_init = median(param_inits);
-        ub = prctile(param_inits,((100-prct)/2)+prct,1);
-        lb = prctile(param_inits,((100-prct)/2),1);
+        ub = prctile(param_inits,((100-prct)/2)+prct,1); ub(1) = param_init(1); % use CI to bound all but gamma
+        lb = prctile(param_inits,((100-prct)/2),1); lb(1) = param_init(1); % use CI to bound all but gamma
     end
 
     if ~logical(ipR.w_dir)

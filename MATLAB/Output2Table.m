@@ -151,9 +151,9 @@ for k = 1:length(rownames)
         params_ci95_lb = prctile(params,2.5,1); params_ci95_ub = prctile(params,97.5,1);
         params_ci95 = cat(1,params_ci95_lb,params_ci95_ub);
         inclinds = 1:length(params_mean);
-        if ~logical(outputs.(fldnames{k}).Full.init.w_dir)
-            inclinds(4) = NaN;
-        end
+        % if ~logical(outputs.(fldnames{k}).Full.init.w_dir)
+        %     inclinds(4) = NaN;
+        % end
         % if strcmp('endm',fldnames{k}) && (length(outputs.endm.Full.init.datalist_endm)>1)  && ...
         %         ~logical(outputs.endm.Full.init.datapca_endm)
         %     inclinds(5:(4+length(outputs.endm.Full.init.datalist_endm))) = NaN;
