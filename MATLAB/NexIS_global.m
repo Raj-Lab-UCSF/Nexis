@@ -6,11 +6,11 @@ function outputs = NexIS_global(varargin)
 % param(4) = s
 
 % Define defaults and set inputs
-study_ = 'User-specified'; % double-check this
+study_ = 'User_specified'; % double-check this
 C_ = [];
-data_ = [];
-tpts_ = [];
-seed_ = [];
+data_ = []; % First vector should be baseline
+tpts_ = []; % First entry should be 0 if running from baseline and there is no time specified there
+seed_ = []; % Set to NaN if running from baseline
 use_dataspace_ = 0;
 matdir_ = [cd filesep 'raw_data_mouse'];
 
@@ -83,30 +83,31 @@ parse(ip, varargin{:});
 ipR = ip.Results;
 
 % Load in data from NexIS/raw_data_mouse directory if needed
-if isempty(ipR.C) && ~strcmp(ipR.study,'User-specified')
+if isempty(ipR.C) && ~strcmp(ipR.study,'User_specified')
     if (length(ipR.study) > 3) && strcmp(ipR.study(1:4),'asyn')
-        load([ipR.matdir filesep 'mouse_aSynData_426.mat'],...
-            'data426','seed426','tpts');
-        ipR.study = ipR.study(6:end);
+        load([ipR.matdir filesep 'Mouse_Synuclein_Data.mat'],...
+            'mousedata_struct');
         load([ipR.matdir filesep 'Connectomes.mat'],'Connectomes');
         C = Connectomes.default;
+        data426 = struct; data426.(ipR.study) = mousedata_struct.(ipR.study).data;
+        seed426 = struct; seed426.(ipR.study) = mousedata_struct.(ipR.study).seed;
+        tpts = struct; tpts.(ipR.study) = mousedata_struct.(ipR.study).time_stamps;
     elseif strcmp(ipR.study,'Henderson')
-        load([ipR.matdir filesep 'Henderson_Asyn_Data.mat'],...
-            'tpts','Henderson_Asyn_Seed_Data','Henderson_Asyn_Pathology_Data');
-        load([ipR.matdir filesep 'Henderson_Asyn_Data.mat'],...
-            'Connection');    
-        C = Connection;
-        tpts_ = struct; tpts_.(ipR.study) = tpts.NTG; tpts = tpts_;
-        seed426 = struct; seed426.(ipR.study) = Henderson_Asyn_Seed_Data;
-        data426 = struct; data426.(ipR.study) = Henderson_Asyn_Pathology_Data.NTG;
+        load([ipR.matdir filesep 'Mouse_Synuclein_Data.mat'],...
+            'mousedata_struct');
+        load([ipR.matdir filesep 'Connectomes.mat'],'Connectomes');
+        C = Connectomes.Henderson;
+        data426 = struct; data426.(ipR.study) = mousedata_struct.(ipR.study).data;
+        seed426 = struct; seed426.(ipR.study) = mousedata_struct.(ipR.study).seed;
+        tpts = struct; tpts.(ipR.study) = mousedata_struct.(ipR.study).time_stamps;
     elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
-        load([ipR.matdir filesep 'GCI_PFF_Data.mat'],...
-            'tpts','GCI_PFF_Pathology_Data','GCI_PFF_Seed_Data');
-        if strcmp(ipR.study,'GCI_Average_New')
-            tpts.(ipR.study) = tpts.GCI_Average;
-        end
-        seed426 = struct; seed426.(ipR.study) = GCI_PFF_Seed_Data;
-        data426 = struct; data426.(ipR.study) = GCI_PFF_Pathology_Data.(ipR.study);
+        load([ipR.matdir filesep 'Mouse_Synuclein_Data.mat'],...
+            'mousedata_struct');
+        load([ipR.matdir filesep 'Connectomes.mat'],'Connectomes');
+        C = Connectomes.Peng;
+        data426 = struct; data426.(ipR.study) = mousedata_struct.(ipR.study).data;
+        seed426 = struct; seed426.(ipR.study) = mousedata_struct.(ipR.study).seed;
+        tpts = struct; tpts.(ipR.study) = mousedata_struct.(ipR.study).time_stamps;
     else
         load([ipR.matdir filesep 'Mouse_Tauopathy_Data_HigherQ.mat'],...
             'mousedata_struct');
@@ -162,8 +163,15 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
 
     else % Use pathology and seed as is
         pathology_raw = data426.(ipR.study);
-        seed_location = seed426.(ipR.study);
         pathology = normalizer(pathology_raw,ipR.normtype);
+        if isnan(seed426.(ipR.study)) % Use timepoint 1 pathology as init. for NaN seed (i.e., run from baseline)
+            seed_location = pathology(:,1);
+            pathology = pathology(:,2:end);
+            time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+            ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+        else
+            seed_location = seed426.(ipR.study);
+        end
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
     end
@@ -391,8 +399,15 @@ else % With bootstrapping of parameters
             pathology = normalizer(pathology,ipR.normtype);
             pathology_orig = pathology;
             pathology(isnan(pathology_raw(:,1)),:) = NaN;
-            seed_location = seed426.(ipR.study);
             time_stamps_orig = time_stamps;
+            if isnan(seed426.(ipR.study)) % Use timepoint 1 pathology as init. for NaN seed (i.e., run from baseline)
+                seed_location = pathology(:,1);
+                pathology = pathology(:,2:end);
+                time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+                ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+            else
+                seed_location = seed426.(ipR.study);
+            end
             % pathology_raw = data426.(ipR.study);
             % notnaninds = find(~isnan(pathology_raw(:,1)));
             % settonansize = round((1-ipR.resample_rate)*length(notnaninds));
@@ -593,10 +608,17 @@ else % With bootstrapping of parameters
         end
     else % Use pathology and seed as is
         pathology_raw = data426.(ipR.study);
-        seed_location = seed426.(ipR.study);
         pathology = normalizer(pathology_raw,ipR.normtype);
-        pathology_orig = pathology;
         time_stamps_orig = time_stamps;
+        if isnan(seed426.(ipR.study)) % Use timepoint 1 pathology as init. for NaN seed (i.e., running from baseline)
+            seed_location = pathology(:,1);
+            pathology = pathology(:,2:end);
+            time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+            ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+        else
+            seed_location = seed426.(ipR.study);
+        end
+        pathology_orig = pathology;
     end
     U = zeros(size(C,1),1);
     if any(isnan(seed_location))
