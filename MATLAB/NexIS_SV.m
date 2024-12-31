@@ -16,7 +16,6 @@ tpts_ = [];
 seed_ = [];
 use_dataspace_ = 0;
 matdir_ = [cd filesep 'raw_data_mouse'];
-yaoctdir_ = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Large_Matfiles';
 
 % Define defaults and set inputs
 costfun_ = 'linr'; % see /lib_NexIS/CostFunction_NexIS.m for options
@@ -43,14 +42,16 @@ niters_ = 100;
 verbose_ = 0;
 fmindisplay_ = 0;
 outputs_nexisglobal_ = [];
-bounds_type_nexis_sv_ = 'old'; % 'old', 'CI_X' where X is the percent ADD FUNCTIONALITY FOR FIXED 
+bounds_type_nexis_sv_ = 'old'; % 'old', 'none', 'CI_X' where X is the percent
 bootstrapping_nexis_sv_ = 0;
 resample_rate_nexis_sv_ = 0.8;
 niters_nexis_sv_ = 100;
 verbose_nexis_sv_ = 0;
 fmindisplay_nexis_sv_ = 0;
-datatype_nexis_sv_ = 'gene'; % 'gene', 'ct_tasic', 'ct_zeisel', 'ct_yao'
-datalist_nexis_sv_ = 3578; % index for Trem2; requires a cell array even for one element if names are used
+datatype_nexis_sv_ = 'gene'; % 'gene', 'Yao', 'Tasic', 'Zeisel', 
+% 'Zhuang_Class', 'Zhuang_Subclass'
+datalist_nexis_sv_ = {'Trem2'}; % if names are used, requires a cell array
+% even for one element; can also supply numeric indices
 datapca_nexis_sv_ = 0;
 flowthresh_ = 99.93;
 
@@ -61,7 +62,8 @@ validChar = @(x) ischar(x);
 validST = @(x) ismember(x,{'analytic','numeric'});
 validBoundsType = @(x) strcmp(x,'old') || strcmp(x(1:2),'CI');
 validParam = @(x) (length(x) == 4);
-validDataTypenexis_sv = @(x) ismember(x,{'gene','ct_tasic','ct_zeisel','ct_yao'});
+validDataTypenexis_sv = @(x) ismember(x,{'gene','Yao','Tasic','Zeisel',...
+    'Zhuang_Class','Zhuang_Subclass'});
 
 addParameter(ip, 'study', study_, validChar);
 addParameter(ip, 'C', C_);
@@ -69,7 +71,6 @@ addParameter(ip, 'data',data_);
 addParameter(ip, 'tpts',tpts_);
 addParameter(ip, 'seed', seed_);
 addParameter(ip, 'matdir', matdir_);
-addParameter(ip, 'yaoctdir', yaoctdir_);
 addParameter(ip, 'use_dataspace', use_dataspace_, validBoolean);
 addParameter(ip, 'costfun', costfun_, validChar);
 addParameter(ip, 'lambda', lambda_, validScalar);
@@ -137,31 +138,35 @@ if isempty(outputs)
                           'fmindisplay', ipR.fmindisplay);
 end
 
-% Load in data from NexIS/raw_data_mouse directory if needed
-if isempty(ipR.C) && ~strcmp(ipR.study,'User-specified')
+% Load in data from NexIS/raw_data_mouse directory if needed. Copied from
+% NexIS_global.m so should be self-consistent, though could load these from
+% 'outputs' above. Would require a bit of careful coding because 'data' in
+% 'outputs' are normalized, though.
+if isempty(ipR.C) && ~strcmp(ipR.study,'User_specified')
     if (length(ipR.study) > 3) && strcmp(ipR.study(1:4),'asyn')
-        load([ipR.matdir filesep 'mouse_aSynData_426.mat'],...
-            'data426','seed426','tpts');
-        ipR.study = ipR.study(6:end);
+        load([ipR.matdir filesep 'Mouse_Synuclein_Data.mat'],...
+            'mousedata_struct');
         load([ipR.matdir filesep 'Connectomes.mat'],'Connectomes');
         C = Connectomes.default;
+        data426 = struct; data426.(ipR.study) = mousedata_struct.(ipR.study).data;
+        seed426 = struct; seed426.(ipR.study) = mousedata_struct.(ipR.study).seed;
+        tpts = struct; tpts.(ipR.study) = mousedata_struct.(ipR.study).time_stamps;
     elseif strcmp(ipR.study,'Henderson')
-        load([ipR.matdir filesep 'Henderson_Asyn_Data.mat'],...
-            'tpts','Henderson_Asyn_Seed_Data','Henderson_Asyn_Pathology_Data');
-        load([ipR.matdir filesep 'Henderson_Asyn_Data.mat'],...
-            'Connection');    
-        C = Connection;
-        tpts_ = struct; tpts_.(ipR.study) = tpts.NTG; tpts = tpts_;
-        seed426 = struct; seed426.(ipR.study) = Henderson_Asyn_Seed_Data;
-        data426 = struct; data426.(ipR.study) = Henderson_Asyn_Pathology_Data.NTG;
+        load([ipR.matdir filesep 'Mouse_Synuclein_Data.mat'],...
+            'mousedata_struct');
+        load([ipR.matdir filesep 'Connectomes.mat'],'Connectomes');
+        C = Connectomes.Henderson;
+        data426 = struct; data426.(ipR.study) = mousedata_struct.(ipR.study).data;
+        seed426 = struct; seed426.(ipR.study) = mousedata_struct.(ipR.study).seed;
+        tpts = struct; tpts.(ipR.study) = mousedata_struct.(ipR.study).time_stamps;
     elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
-        load([ipR.matdir filesep 'GCI_PFF_Data.mat'],...
-            'tpts','GCI_PFF_Pathology_Data','GCI_PFF_Seed_Data');
-        if strcmp(ipR.study,'GCI_Average_New')
-            tpts.(ipR.study) = tpts.GCI_Average;
-        end
-        seed426 = struct; seed426.(ipR.study) = GCI_PFF_Seed_Data;
-        data426 = struct; data426.(ipR.study) = GCI_PFF_Pathology_Data.(ipR.study);
+        load([ipR.matdir filesep 'Mouse_Synuclein_Data.mat'],...
+            'mousedata_struct');
+        load([ipR.matdir filesep 'Connectomes.mat'],'Connectomes');
+        C = Connectomes.Peng;
+        data426 = struct; data426.(ipR.study) = mousedata_struct.(ipR.study).data;
+        seed426 = struct; seed426.(ipR.study) = mousedata_struct.(ipR.study).seed;
+        tpts = struct; tpts.(ipR.study) = mousedata_struct.(ipR.study).time_stamps;
     else
         load([ipR.matdir filesep 'Mouse_Tauopathy_Data_HigherQ.mat'],...
             'mousedata_struct');
@@ -198,23 +203,21 @@ if ~isequal(ipR.datalist_nexis_sv,{'random'})
     end
 
     if strcmp(ipR.datatype_nexis_sv,'gene')
-        load([cd filesep 'raw_data_mouse' filesep 'Regional_Gene_Data.mat'],'regvgene_mean');
-        U = regvgene_mean(:,ind_nexis_sv);
-    elseif strcmp(ipR.datatype_nexis_sv,'ct_tasic')
-        load([cd filesep 'raw_data_mouse' filesep 'Tasic_CTMaps.mat'],'Tasic_ng606');
-        U = Tasic_ng606(:,ind_nexis_sv);
-    elseif strcmp(ipR.datatype_nexis_sv,'ct_zeisel')
-        load([cd filesep 'raw_data_mouse' filesep 'Zeisel_CTMaps.mat'],'Zeisel_ng1360');
-        U = Zeisel_ng1360(:,ind_nexis_sv);
-    elseif strcmp(ipR.datatype_nexis_sv,'ct_yao')
-        load([ipR.yaoctdir filesep 'Yao_Dependencies.mat'],'outstruct');
-        U = outstruct.Bmeans(:,ind_nexis_sv);
+        datstruct_gene = load([cd filesep 'raw_data_mouse' filesep ...
+            'GeneExpressionMaps.mat'],'GeneExpressionMaps');
+        U = datstruct_gene.GeneExpressionMaps.All.expression_426(:,ind_nexis_sv);        
+        % load([cd filesep 'raw_data_mouse' filesep 'Regional_Gene_Data.mat'],'regvgene_mean');
+        % U = regvgene_mean(:,ind_nexis_sv);
+    else
+        datstruct_ct = load([cd filesep 'raw_data_mouse' filesep 'CellTypeMaps.mat'],'CellTypeMaps');
+        U = datstruct_ct.GeneExpressionMaps.(ipR.datatype_nexis_sv).maps(:,ind_nexis_sv);  
     end
 else
     U = rand(size(C,1),1);
 end
 
-% Reorder U data if needed (IGNORING FOR NOW - 3/19/24)
+% Reorder U data if needed (IGNORING FOR NOW; should not use this code for
+% Yuanxi's data at this point - 12/30/24)
 if strcmp(ipR.study,'Henderson')
     error('No gene data on Henderson regional atlas at this time!')
 elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
@@ -222,7 +225,8 @@ elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
         'BrainRegionReorderMat');
     load([cd filesep 'raw_data_mouse' filesep 'regionvoxels.mat'],...
         'voxels');
-    BrainRegionReorderMat_2h = [BrainRegionReorderMat; (BrainRegionReorderMat+213)]; % add second hemisphere
+    BrainRegionReorderMat_2h = [BrainRegionReorderMat; ...
+        (BrainRegionReorderMat+213)]; % add second hemisphere
     voxels_2h = [voxels; voxels];
     U_ = nan(size(BrainRegionReorderMat_2h,1),1);
     voxels_ = U_;
@@ -240,6 +244,7 @@ elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
     U = U_;
 end
 
+% Mean-normalize gene/cell-type data, works best empirically
 U = U ./ mean(U,'omitmissing');
 if logical(ipR.datapca_nexis_sv) && (length(ipR.datalist_nexis_sv) > 1)
     U_mean = mean(U,2,'omitmissing');
@@ -249,12 +254,14 @@ if logical(ipR.datapca_nexis_sv) && (length(ipR.datalist_nexis_sv) > 1)
         U = -U;
     end
 end
-% minU = repmat(min(U),size(U,1),1);
-% maxU = repmat(max(U),size(U,1),1);
-% U = (U - minU) ./ (maxU - minU);
 
 % Solve and store results
 outputs.nexis_sv = struct;
+%
+%
+% No bootstrapping
+%
+%
 if ~logical(ipR.bootstrapping_nexis_sv)
     fprintf('Creating Optimal NexIS:SV Model\n');
     time_stamps = tpts.(ipR.study);
@@ -263,7 +270,6 @@ if ~logical(ipR.bootstrapping_nexis_sv)
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
-        % baseline test start
         if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
@@ -272,22 +278,21 @@ if ~logical(ipR.bootstrapping_nexis_sv)
             time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
             ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
         end
-        % seed_location = pathology(:,1); 
-        % pathology = pathology(:,2:end);
-        % time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
-        % ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
-        % baseline test end
-
     else % Use pathology and seed as is
         pathology_raw = data426.(ipR.study);
-        seed_location = seed426.(ipR.study);
         pathology = normalizer(pathology_raw,ipR.normtype);
+        if isnan(seed426.(ipR.study)) % Use timepoint 1 pathology as init. for NaN seed (i.e., run from baseline)
+            seed_location = pathology(:,1);
+            pathology = pathology(:,2:end);
+            time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+            ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+        else
+            seed_location = seed426.(ipR.study);
+        end
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
     end
-    if any(isnan(seed_location))
-        seed_location(isnan(seed_location)) = 0;
-    end
+
     n_types = size(U,2);
     ndmflds = fieldnames(outputs.nexis_global);
     if length(ndmflds) == 1
@@ -353,15 +358,16 @@ if ~logical(ipR.bootstrapping_nexis_sv)
             'FunctionTolerance',ipR.fxntol,'StepTolerance',ipR.steptol);
     end
     [param_num, fval_num] = fmincon(objfun_handle,param_init,[],[],[],[],lb,ub,[],options);
-
-    tinds = setdiff(1:length(time_stamps), ipR.excltpts_costfun);
+    % tinds = setdiff(1:length(time_stamps), ipR.excltpts_costfun);
     ynum = NexIS_fun(C,U,time_stamps,seed_location,param_num,ipR.solvetype,ipR.volcorrect,ipR.matdir);
     
     % Store all outputs
     if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) % Convert back to data space
-        pathology = CCFToData(pathology(:,tinds),ipR.study,ipR.matdir);
+        pathology = CCFToData(pathology,ipR.study,ipR.matdir);
+        % pathology = CCFToData(pathology(:,tinds),ipR.study,ipR.matdir);
         pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
-        ynum = CCFToData(ynum(:,tinds),ipR.study,ipR.matdir);
+        ynum = CCFToData(ynum,ipR.study,ipR.matdir);
+        % ynum = CCFToData(ynum(:,tinds),ipR.study,ipR.matdir);
         baseline = pathology_orig(:,1);
         if isnan(seed426.(ipR.study))
             seed_save = NaN;
@@ -375,32 +381,24 @@ if ~logical(ipR.bootstrapping_nexis_sv)
             seed_save = seed_location;
         end
         baseline = pathology_orig(:,1);
-        pathology = pathology(:,tinds);
-        ynum = ynum(:,tinds);
+        % pathology = pathology(:,tinds);
+        % ynum = ynum(:,tinds);
     end
     outputs.nexis_sv.Full.data = pathology; % this has been normalized
     outputs.nexis_sv.Full.baseline = baseline; % this has been normalized
-
-    % baseline test start
-    if isnan(seed426.(ipR.study))
-        outputs.nexis_sv.Full.time_stamps = time_stamps_orig(tinds+1);
-    else
-        outputs.nexis_sv.Full.time_stamps = time_stamps_orig(tinds);
-    end
-    % outputs.nexis_sv.Full.time_stamps = time_stamps_orig(tinds+1);
-    %baseline test end
-
+    % if isnan(seed426.(ipR.study))
+    %     outputs.nexis_sv.Full.time_stamps = time_stamps_orig(tinds+1);
+    % else
+    %     outputs.nexis_sv.Full.time_stamps = time_stamps_orig(tinds);
+    % end
+    outputs.nexis_global.Full.time_stamps = time_stamps_orig;
     outputs.nexis_sv.Full.predicted = ynum;
     outputs.nexis_sv.Full.param_fit = param_num;
     outputs.nexis_sv.Full.fval = fval_num;
     outputs.nexis_sv.Full.init.seed = seed_save;
     outputs.nexis_sv.Full.init.C = C;
     outputs.nexis_sv.Full.init.U_norm = U;
-    if ismember(ipR.study,{'human','mouse'})
-        outputs.nexis_sv.Full.init.study = ['asyn ' ipR.study];
-    else
-        outputs.nexis_sv.Full.init.study = ipR.study;
-    end
+    outputs.nexis_sv.Full.init.study = ipR.study;
     outputs.nexis_sv.Full.init.solvetype = ipR.solvetype;
     outputs.nexis_sv.Full.init.volcorrect = ipR.volcorrect;
     outputs.nexis_sv.Full.init.normtype = ipR.normtype;
@@ -427,11 +425,25 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     outputs.nexis_sv.Full.fmincon.max_evaluations = ipR.maxeval;
     
     % Calculate per-timepoint R values
-    Rvalues = zeros(1,length(tinds));
-    for jj = 1:length(tinds)
-        Rvalues(jj) = corr(ynum(:,jj),pathology(:,jj),'rows','complete');
+    ynum_fitassess = ynum;
+    pathology_fitassess = pathology;
+    if ipR.exclseed_outputs && all(~isnan(seed426.(ipR.study)))
+        seedinds = find(seed_save);
+        ynum_fitassess(seedinds,:) = [];
+        pathology_fitassess(seedinds,:) = [];
     end
-    outputs.nexis_sv.Full.results.Corrs = Rvalues; % NOTE: not corrected for seed
+
+    Rvalues = zeros(1,length(time_stamps));
+    for jj = 1:length(time_stamps)
+        Rvalues(jj) = corr(ynum_fitassess(:,jj),pathology_fitassess(:,jj),'rows','complete');
+    end
+    outputs.nexis_sv.Full.results.Corrs = Rvalues; 
+
+    % Rvalues = zeros(1,length(tinds));
+    % for jj = 1:length(tinds)
+    %     Rvalues(jj) = corr(ynum(:,jj),pathology(:,jj),'rows','complete');
+    % end
+    % outputs.nexis_sv.Full.results.Corrs = Rvalues; % NOTE: not corrected for seed
 
     P = reshape(pathology, [], 1);
     Y = reshape(ynum, [], 1);
@@ -489,22 +501,63 @@ if ~logical(ipR.bootstrapping_nexis_sv)
         disp(['Rsqr_adj = ' num2str(outputs.nexis_sv.Full.results.lm_Rsquared_adj)])
         disp(' ')
     end
+%
+%
+% With bootstrapping
+%
+%
 else
-    rng(1);
+    rng(1); % Different from NexIS_global.m seed
     for i = 1:ipR.niters_nexis_sv
         fldname = sprintf('Iter_%d',i);
-        fprintf('nexis_sv Bootstrapping Iteration %d/%d\n',i,ipR.niters_nexis_sv);        
         time_stamps = tpts.(ipR.study);
-        pathology = data426.(ipR.study);
-        seed_location = seed426.(ipR.study);
-        n_types = size(U,2);
+        if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
+            pathology_raw = data426.(ipR.study);
+            notnaninds = find(~isnan(pathology_raw(:,1)));
+            settonansize = round((1-ipR.resample_rate)*length(notnaninds));
+            settonaninds = randperm(length(notnaninds));
+            settonaninds = notnaninds(settonaninds(1:settonansize));
+            pathology = pathology_raw;
+            pathology_raw(settonaninds,:) = NaN;
+            pathology_raw = DataToCCF(pathology_raw,ipR.study,ipR.matdir);
+            pathology = DataToCCF(pathology,ipR.study,ipR.matdir);
+            pathology = normalizer(pathology,ipR.normtype);
+            pathology_orig = pathology;
+            pathology(isnan(pathology_raw(:,1)),:) = NaN;
+            time_stamps_orig = time_stamps;
+            if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to CCF space for model init.
+                seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
+            else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
+                seed_location = pathology(:,1);
+                pathology = pathology(:,2:end);
+                % pathology_orig = pathology_orig(:,2:end);
+                time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+                ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+            end
+        else % Use pathology and seed as is
+            pathology_raw = data426.(ipR.study);
+            notnaninds = find(~isnan(pathology_raw(:,1)));
+            settonansize = round((1-ipR.resample_rate)*length(notnaninds));
+            settonaninds = randperm(length(notnaninds));
+            settonaninds = notnaninds(settonaninds(1:settonansize));
+            pathology = pathology_raw;
+            pathology_raw(settonaninds,:) = NaN;
+            pathology = normalizer(pathology,ipR.normtype);
+            pathology_orig = pathology;
+            pathology(isnan(pathology_raw(:,1)),:) = NaN;
+            time_stamps_orig = time_stamps;
+            if isnan(seed426.(ipR.study)) % Use timepoint 1 pathology as init. for NaN seed (i.e., run from baseline)
+                seed_location = pathology(:,1);
+                pathology = pathology(:,2:end);
+                time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+                ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+            else
+                seed_location = seed426.(ipR.study);
+            end
+        end
 
-        notnaninds = find(~isnan(pathology(:,1)));
-        settonansize = round((1-ipR.resample_rate)*length(notnaninds));
-        settonaninds = randperm(length(notnaninds));
-        settonaninds = notnaninds(settonaninds(1:settonansize));
-        pathology(settonaninds,:) = NaN;
-        pathology = normalizer(pathology,ipR.normtype);
+        fprintf('NexIS:SV Bootstrapping Iteration %d/%d\n',i,ipR.niters_nexis_sv);        
+        n_types = size(U,2);
         ndmflds = fieldnames(outputs.nexis_sv);
         if length(ndmflds) == 1
             param_inits = outputs.nexis_sv.Full.param_fit; 
@@ -516,19 +569,27 @@ else
             end    
         end
 
-        if strcmp(ipR.bounds_type_nexis_sv,'old') && (size(param_inits,1) > 1)
-            param_init = mean(param_inits);
-            ub = 1.3*param_init;
-            lb = 0.7*param_init;
+        if strcmp(ipR.bounds_type_nexis_sv,'none') && (size(param_inits,1) > 1)
+            param_init = median(param_inits); % Was originally mean, median probably better estimator
+            ub = param_init; % fix all global parameters
+            lb = param_init; % fix all global parameters
+        elseif strcmp(ipR.bounds_type_nexis_sv,'unconstrained') && (size(param_inits,1) > 1)
+            param_init = median(param_inits); % Was originally mean, median probably better estimator
+            ub = [param_init(1),Inf,Inf,1,0,0]; % fix gamma, unconstrain others
+            lb = [param_init(1),0,0,0,0,0]; % fix gamma, unconstrain others;
+        elseif strcmp(ipR.bounds_type_nexis_sv,'old') && (size(param_inits,1) > 1)
+            param_init = mean(param_inits); % Was originally mean, median probably better estimator
+            ub = [1.3*param_init(1:4),0,0]; % Vary within +/- 30%
+            lb = [0.7*param_init(1:4),0,0]; % Vary within +/- 30%
         elseif (size(param_inits,1) == 1)
             param_init = param_inits;
-            ub = 1.3*param_init;
-            lb = 0.7*param_init;
+            ub = [param_init(1),10*param_init(2),10*param_init(3),1,0,0]; % fix gamma, very loosely constrain others;
+            lb = [param_init(1),0.1*param_init(2),0.1*param_init(3),0,0,0]; % fix gamma, very loosely constrain others;
         else
-            prct = str2double(ipR.bounds_type_nexis_sv(4:end)); 
+            prct = str2double(ipR.bounds_type_nexis_sv(4:end));
             param_init = median(param_inits);
-            ub = prctile(param_inits,((100-prct)/2)+prct,1);
-            lb = prctile(param_inits,((100-prct)/2),1);
+            ub = prctile(param_inits,((100-prct)/2)+prct,1); ub(1) = param_init(1); % use CI to bound all but gamma
+            lb = prctile(param_inits,((100-prct)/2),1); lb(1) = param_init(1); % use CI to bound all but gamma
         end
 
         if ~logical(ipR.w_dir)
@@ -544,13 +605,14 @@ else
         end
         morder = 1 + sum(mordervec) + 2*n_types;
         
-        param_init = [param_init(1:4),zeros(1,n_types),zeros(1,n_types),zeros(1,n_types)];
-        lb = [lb(1:4),zeros(1,n_types),-Inf(1,n_types),-Inf(1,n_types)];
-        ub = [ub(1:4),zeros(1,n_types),Inf(1,n_types),Inf(1,n_types)];
+        param_init = [param_init(1:4),zeros(1,n_types),zeros(1,n_types)];
+        lb = [lb(1:4),-Inf(1,n_types),-Inf(1,n_types)];
+        ub = [ub(1:4),Inf(1,n_types),Inf(1,n_types)];
 
-        objfun_handle = @(param) objfun_nexis_sv_general_dir_costopts(param,...
-            seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,...
-            ipR.costfun,ipR.excltpts_costfun,ipR.exclseed_costfun);
+        objfun_handle = @(param) CostFunction_NexIS(param,C,U,time_stamps,...
+            seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.costfun,...
+            ipR.excltpts_costfun,ipR.exclseed_costfun,ipR.use_dataspace,ipR.study,...
+            ipR.logtrans,ipR.lambda,ipR.matdir);
         if logical(ipR.fmindisplay)
             options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
                 'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
@@ -562,8 +624,6 @@ else
         end
         try 
             [param_num, fval_num] = fmincon(objfun_handle,param_init,[],[],[],[],lb,ub,[],options);
-%             [param_num, fval_num] = fmincon(objfun_handle,rand(1,length(param_init)),...
-%                 [],[],[],[],-Inf(1,length(param_init)),Inf(1,length(param_init)),[],options);
         catch ME
             fprintf('Error: %s\n',ME.message);
             fprintf('Trying initial parameter tweak\n')
@@ -578,27 +638,44 @@ else
             end
         end
 
-        % Solve nexis_sv with the optimal parameters
-        x0_num = seed_location*param_num(1);
-        alpha_num = param_num(2);
-        beta_num = param_num(3);
-        s_num = param_num(4); % not fit if directionality is turned off
-        a_num = param_num(5:(n_types+4)); % not fit
-        b_num = param_num((n_types+5):(2*n_types+4));
-        p_num = param_num((2*n_types+5):(3*n_types+4));
-        ynum = nexis_sv_general_dir(x0_num,time_stamps,C,U,alpha_num,beta_num,s_num,a_num,b_num,p_num,ipR.solvetype,ipR.volcorrect);
+        % Solve NexIS SV with the optimized parameters
+        ynum = NexIS_fun(C,U,time_stamps,seed_location,param_num,ipR.solvetype,ipR.volcorrect,ipR.matdir);
+
+        % Store all outputs
+        if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) % Convert back to data space
+            pathology = CCFToData(pathology,ipR.study,ipR.matdir);
+            pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
+            ynum = CCFToData(ynum,ipR.study,ipR.matdir);
+            baseline = pathology_orig(:,1);
+            ynum_save = ynum;
+            if isnan(seed426.(ipR.study))
+                seed_save = NaN;
+                % ynum_save = [pathology_orig(:,1), ynum]; % save ynum with baseline to keep consistent with pathology_orig
+            else
+                seed_save = CCFToData(seed_location,ipR.study,ipR.matdir);
+                % ynum_save = ynum;
+            end
+        else
+            baseline = pathology_orig(:,1);
+            ynum_save = ynum;
+            if isnan(seed426.(ipR.study))
+                seed_save = NaN;
+                % ynum_save = [pathology_orig(:,1), ynum]; % save ynum with baseline to keep consistent with pathology_orig
+            else
+                seed_save = seed_location;
+                % ynum_save = ynum;
+            end
+        end
+
         outputs.nexis_sv.(fldname).data = pathology;
-        outputs.nexis_sv.(fldname).time_stamps = time_stamps;
-        outputs.nexis_sv.(fldname).predicted = ynum;
+        outputs.nexis_sv.(fldname).baseline = baseline;
+        outputs.nexis_sv.(fldname).time_stamps = time_stamps_orig;
+        outputs.nexis_sv.(fldname).predicted = ynum_save;
         outputs.nexis_sv.(fldname).param_fit = param_num;
         outputs.nexis_sv.(fldname).fval = fval_num;
+        outputs.nexis_sv.(fldname).init.seed = seed_save;
         outputs.nexis_sv.(fldname).init.C = C;
         outputs.nexis_sv.(fldname).init.study = ipR.study;
-        if ismember(ipR.study,{'human','mouse'})
-            outputs.nexis_sv.(fldname).init.study = ['asyn ' ipR.study];
-        else
-            outputs.nexis_sv.(fldname).init.study = ipR.study;
-        end
         outputs.nexis_sv.(fldname).init.solvetype = ipR.solvetype;
         outputs.nexis_sv.(fldname).init.volcorrect = ipR.volcorrect;
         outputs.nexis_sv.(fldname).init.normtype = ipR.normtype;
@@ -684,33 +761,95 @@ else
         end
         clear ub lb param_init
     end
-    fprintf('Creating Optimal nexis_sv Model\n');
+    %
+    fprintf('Creating Optimal NexIS:SV Model\n');
     time_stamps = tpts.(ipR.study);
-    pathology = normalizer(data426.(ipR.study),ipR.normtype);  
-    seed_location = seed426.(ipR.study);
-    fldnames = fieldnames(outputs.nexis_sv);
-    param_fits = zeros(length(fldnames),length(outputs.nexis_sv.(fldnames{1}).param_fit));
+    if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
+        pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
+        pathology = normalizer(pathology_raw,ipR.normtype);
+        pathology_orig = pathology;
+        time_stamps_orig = time_stamps;
+        if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to CCF space for model init.
+            seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
+        else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
+            seed_location = pathology(:,1);
+            pathology = pathology(:,2:end);
+            time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+            ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+        end
+    else % Use pathology and seed as is
+        pathology_raw = data426.(ipR.study);
+        pathology = normalizer(pathology_raw,ipR.normtype);
+        time_stamps_orig = time_stamps;
+        if isnan(seed426.(ipR.study)) % Use timepoint 1 pathology as init. for NaN seed (i.e., running from baseline)
+            seed_location = pathology(:,1);
+            pathology = pathology(:,2:end);
+            time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
+            ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
+        else
+            seed_location = seed426.(ipR.study);
+        end
+        pathology_orig = pathology;
+    end
+
+    if any(isnan(seed_location))
+        seed_location(isnan(seed_location)) = 0;
+    end
+
+    fldnames = fieldnames(outputs.nexis_global);
+    param_fits = zeros(length(fldnames),length(outputs.nexis_global.(fldnames{1}).param_fit));
     for i = 1:length(fldnames)
         fldname = fldnames{i};
-        param_fits(i,:) = outputs.nexis_sv.(fldname).param_fit;
+        param_fits(i,:) = outputs.nexis_global.(fldname).param_fit;
     end
-    param_opt = mean(param_fits);
-    x0_opt = seed_location*param_opt(1);
-    alpha_opt = param_opt(2);
-    beta_opt = param_opt(3);
-    s_opt = param_opt(4); % not fit if directionality is turned off
-    a_opt = param_opt(5:(n_types+4)); % not fit
-    b_opt = param_opt((n_types+5):(2*n_types+4)); 
-    p_opt = param_opt((2*n_types+5):(3*n_types+4)); 
-    yopt = nexis_sv_general_dir(x0_opt,time_stamps,C,U,alpha_opt,beta_opt,s_opt,a_opt,b_opt,p_opt,ipR.solvetype,ipR.volcorrect);
+    
+    % Evaluate NexIS:global with best estimate of parameters
+    param_opt = median(param_fits); % Used mean before, median should be better estimator
+    yopt = NexIS_fun(C,U,time_stamps,seed_location,param_opt,ipR.solvetype,ipR.volcorrect,ipR.matdir);
+
+    % Store all outputs
+    if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) 
+        pathology_fvalcalc = pathology; % need pathology in CCF space for cost function input
+        pathology = CCFToData(pathology,ipR.study,ipR.matdir);% Convert back to data space
+        pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
+        yopt = CCFToData(yopt,ipR.study,ipR.matdir);
+        yopt_save = yopt;
+        if isnan(seed426.(ipR.study))
+            seed_save = NaN;
+            % yopt_save = [pathology_orig(:,1), yopt]; % save yopt with baseline to keep consistent with pathology_orig
+        else
+            seed_save = CCFToData(seed_location,ipR.study,ipR.matdir);
+            % yopt_save = yopt;
+        end
+    else
+        pathology_fvalcalc = pathology; % need pathology in CCF space for cost function input
+        seed_save = seed_location;
+        yopt_save = yopt;
+    end
+
     outputs.nexis_sv.Full.data = pathology;
-    outputs.nexis_sv.Full.time_stamps = time_stamps;
-    outputs.nexis_sv.Full.predicted = yopt;
+    outputs.nexis_sv.Full.baseline = pathology_orig(:,1);
+    outputs.nexis_sv.Full.time_stamps = time_stamps_orig;
+    outputs.nexis_sv.Full.predicted = yopt_save;
     outputs.nexis_sv.Full.param_fit = param_opt;
-    outputs.nexis_sv.Full.fval = objfun_nexis_sv_general_dir_costopts(param_opt,...
-        seed_location,pathology,time_stamps,C,U,ipR.solvetype,ipR.volcorrect,...
-        ipR.costfun,ipR.excltpts_costfun,ipR.exclseed_costfun);
+    outputs.nexis_sv.Full.fval = CostFunction_NexIS(param_opt,...
+                                                        C,...
+                                                        U,...
+                                                        time_stamps,...
+                                                        seed_location,...
+                                                        pathology_fvalcalc,...
+                                                        ipR.solvetype,...
+                                                        ipR.volcorrect,...
+                                                        ipR.costfun,...
+                                                        ipR.excltpts_costfun,...
+                                                        ipR.exclseed_costfun,...
+                                                        ipR.use_dataspace,...
+                                                        ipR.study,...
+                                                        ipR.logtrans,...
+                                                        ipR.lambda,...
+                                                        ipR.matdir);
     outputs.nexis_sv.Full.init = outputs.nexis_sv.(fldnames{1}).init;
+    outputs.nexis_sv.Full.init.seed = seed_save;
     outputs.nexis_sv.Full.fmincon = [];
     Rvalues = zeros(1,length(time_stamps));
     for jj = 1:length(time_stamps)
@@ -737,13 +876,13 @@ else
     outputs.nexis_sv.Full.results.lm_Rsquared_ord = lm_nexis_sv.Rsquared.Ordinary;
     outputs.nexis_sv.Full.results.lm_Rsquared_adj = lm_nexis_sv.Rsquared.Adjusted;
     
-    flow = FlowCalculator(yopt,C,beta_opt,0,U,b_opt);
-    for i = 1:size(flow,3)
-        flow_ = flow(:,:,i);
-        flow_(flow_ < prctile(nonzeros(flow),ipR.flowthresh)) = 0;
-        flow(:,:,i) = flow_;
-    end
-    outputs.nexis_sv.Full.flow = flow;
+    % flow = FlowCalculator(yopt,C,beta_opt,0,U,b_opt);
+    % for i = 1:size(flow,3)
+    %     flow_ = flow(:,:,i);
+    %     flow_(flow_ < prctile(nonzeros(flow),ipR.flowthresh)) = 0;
+    %     flow(:,:,i) = flow_;
+    % end
+    % outputs.nexis_sv.Full.flow = flow;
     
     if logical(ipR.verbose_nexis_sv)
         disp('--------------------------------------------------')
@@ -780,17 +919,20 @@ end
 
     function indices = NameIndex(names,dattypenexis_sv)
         if strcmp(dattypenexis_sv,'gene')
-            load([cd filesep 'raw_data_mouse' filesep 'gene_names_trans.mat'],'gene_names_trans');
-            namescell = gene_names_trans;
-        elseif strcmp(dattypenexis_sv,'ct_tasic')
-            load([cd filesep 'raw_data_mouse' filesep 'classkey_tasic.mat'],'classkey_tasic');
-            namescell = classkey_tasic;
-        elseif strcmp(dattypenexis_sv,'ct_zeisel')
-            load([cd filesep 'raw_data_mouse' filesep 'classkey_zeisel.mat'],'classkey_zeisel');
-            namescell = classkey_zeisel;
-        elseif strcmp(dattypenexis_sv,'ct_yao')
-            load([ipR.yaoctdir filesep 'Yao_Dependencies.mat'],'classkey');
-            namescell = classkey;
+            datstruct = load([cd filesep 'raw_data_mouse' filesep 'GeneExpressionMaps.mat'],'GeneExpressionMaps');
+            namescell = datstruct.GeneExpressionMaps.All.gene_names;
+        else
+            datstruct = load([cd filesep 'raw_data_mouse' filesep 'CellTypeMaps.mat'],'CellTypeMaps');
+            namescell = datstruct.CellTypeMaps.(dattypenexis_sv).classkey;
+        % elseif strcmp(dattypenexis_sv,'ct_tasic')
+        %     load([cd filesep 'raw_data_mouse' filesep 'classkey_tasic.mat'],'classkey_tasic');
+        %     namescell = classkey_tasic;
+        % elseif strcmp(dattypenexis_sv,'ct_zeisel')
+        %     load([cd filesep 'raw_data_mouse' filesep 'classkey_zeisel.mat'],'classkey_zeisel');
+        %     namescell = classkey_zeisel;
+        % elseif strcmp(dattypenexis_sv,'ct_yao')
+        %     load([ipR.yaoctdir filesep 'Yao_Dependencies.mat'],'classkey');
+        %     namescell = classkey;
         end
         indices = zeros(1,length(names));
         for n_i = 1:length(names)
@@ -800,9 +942,18 @@ end
 
     function normdata = normalizer(data,ntype)
         if strcmp(ntype,'sum')
-            normdata = data/nansum(data(:,1));
+            normdata = data/sum(data(:,1),'omitnan');
+        elseif strcmp(ntype,'masssum')
+            load([ipR.matdir filesep 'DefaultAtlas.mat'], 'DefaultAtlas');
+            voxels_2hem = DefaultAtlas.volumes;
+            data_1 = data(:,1);
+            nonnans = isnan(data_1);
+            data_1(nonnans) = [];
+            voxels_2hem(nonnans) = [];
+            masssum = data_1.' * voxels_2hem;
+            normdata = data / masssum;
         elseif strcmp(ntype,'mean')
-            normdata = data/nanmean(data(:,1));
+            normdata = data/mean(data(:,1),'omitnan');
         elseif strcmp(ntype,'norm2')
             normdata = data/norm(data(:,1),2);
         elseif strcmp(ntype,'log')

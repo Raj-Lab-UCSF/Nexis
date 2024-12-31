@@ -377,6 +377,14 @@ end
 
 %% 2. NexIS:SV
 %% 2.1 No bootstrapping of parameters, preloaded tau studies
+% Loading previously run NexIS_global struct. Not required to do this to run
+% NexIS:SV, but recommended for efficiency reasons, particularly if running
+% through multiple factors (genes, cell types) for the same pathology
+% dataset
+filename_out = 'NexIS_Wrapper_SV_2-1_NoBootstrap'; % Name of output file
+filepath_in = '~/Documents/MATLAB/Nexis_Project/Results_Files_NexISWrapper'; % Load path
+filepath_out = filepath_in; % Save path
+
 
 %% 2.2 With bootstrapping of parameters, preloaded tau studies
 

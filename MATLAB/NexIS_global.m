@@ -137,6 +137,11 @@ end
 
 % Solve and store results
 outputs.nexis_global = struct;
+%
+%
+% No bootstrapping
+%
+%
 if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     fprintf('Creating Optimal NexIS:global Model\n');
     time_stamps = tpts.(ipR.study);
@@ -145,9 +150,7 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
-        
-        % baseline test start
-        if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to CCF space for model init.
+        if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
             seed_location = pathology(:,1);
@@ -155,12 +158,6 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
             time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
             ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
         end
-        % seed_location = pathology(:,1); 
-        % pathology = pathology(:,2:end);
-        % time_stamps = time_stamps(2:end) - time_stamps(1); % offset model times from t1
-        % ipR.param_init(1) = 1; ipR.ub(1) = 1; ipR.lb(1) = 1; % don't fit gamma
-        % baseline test end
-
     else % Use pathology and seed as is
         pathology_raw = data426.(ipR.study);
         pathology = normalizer(pathology_raw,ipR.normtype);
@@ -243,25 +240,18 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     end
     outputs.nexis_global.Full.data = pathology; % this has been normalized
     outputs.nexis_global.Full.baseline = baseline; % this has been normalized
-
     % if isnan(seed426.(ipR.study))
     %     outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds+1);
     % else
     %     outputs.nexis_global.Full.time_stamps = time_stamps_orig(tinds);
     % end
     outputs.nexis_global.Full.time_stamps = time_stamps_orig;
-
-
     outputs.nexis_global.Full.predicted = ynum;
     outputs.nexis_global.Full.param_fit = param_num;
     outputs.nexis_global.Full.fval = fval_num;
     outputs.nexis_global.Full.init.seed = seed_save;
     outputs.nexis_global.Full.init.C = C;
-    if ismember(ipR.study,{'human','mouse'})
-        outputs.nexis_global.Full.init.study = ['asyn ' ipR.study];
-    else
-        outputs.nexis_global.Full.init.study = ipR.study;
-    end
+    outputs.nexis_global.Full.init.study = ipR.study;
     outputs.nexis_global.Full.init.solvetype = ipR.solvetype;
     outputs.nexis_global.Full.init.volcorrect = ipR.volcorrect;
     outputs.nexis_global.Full.init.normtype = ipR.normtype;
@@ -298,7 +288,7 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     for jj = 1:length(time_stamps)
         Rvalues(jj) = corr(ynum_fitassess(:,jj),pathology_fitassess(:,jj),'rows','complete');
     end
-    outputs.nexis_global.Full.results.Corrs = Rvalues; % NOTE: not corrected for seed
+    outputs.nexis_global.Full.results.Corrs = Rvalues; 
 
     P = reshape(pathology_fitassess, [], 1);
     Y = reshape(ynum_fitassess, [], 1);
@@ -350,7 +340,12 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
         disp(['Rsqr_adj = ' num2str(outputs.nexis_global.Full.results.lm_Rsquared_adj)])
         disp(' ')
     end
-else % With bootstrapping of parameters
+%
+%
+% With bootstrapping
+%
+%
+else 
     rng(0);
     for i = 1:ipR.niters
         fldname = sprintf('Iter_%d',i);
@@ -509,11 +504,7 @@ else % With bootstrapping of parameters
         outputs.nexis_global.(fldname).fval = fval_num;
         outputs.nexis_global.(fldname).init.seed = seed_save;
         outputs.nexis_global.(fldname).init.C = C;
-        if ismember(ipR.study,{'human','mouse'})
-            outputs.nexis_global.(fldname).init.study = ['asyn ' ipR.study];
-        else
-            outputs.nexis_global.(fldname).init.study = ipR.study;
-        end
+        outputs.nexis_global.(fldname).init.study = ipR.study;
         outputs.nexis_global.(fldname).init.solvetype = ipR.solvetype;
         outputs.nexis_global.(fldname).init.volcorrect = ipR.volcorrect;
         outputs.nexis_global.(fldname).init.normtype = ipR.normtype;
@@ -676,8 +667,8 @@ else % With bootstrapping of parameters
                                                         ipR.logtrans,...
                                                         ipR.lambda,...
                                                         ipR.matdir);
-    outputs.nexis_global.Full.init.seed = seed_save;
     outputs.nexis_global.Full.init = outputs.nexis_global.(fldnames{1}).init;
+    outputs.nexis_global.Full.init.seed = seed_save;
     outputs.nexis_global.Full.fmincon = [];
     Rvalues = zeros(1,length(time_stamps));
     for jj = 1:length(time_stamps)
