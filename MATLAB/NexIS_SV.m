@@ -14,6 +14,7 @@ C_ = [];
 data_ = [];
 tpts_ = [];
 seed_ = [];
+U_ = [];
 use_dataspace_ = 0;
 matdir_ = [cd filesep 'raw_data_mouse'];
 
@@ -24,6 +25,7 @@ solvetype_ = 'analytic';
 volcorrect_ = 1;
 exclseed_costfun_ = 0;
 excltpts_costfun_ = [];
+exclseed_outputs_ = 0;
 logtrans_ = 'none';
 Cnormtype_ = 'minmax';
 normtype_ = 'sum';
@@ -42,14 +44,14 @@ niters_ = 100;
 verbose_ = 0;
 fmindisplay_ = 0;
 outputs_nexisglobal_ = [];
-bounds_type_nexis_sv_ = 'old'; % 'old', 'none', 'CI_X' where X is the percent
+bounds_type_nexis_sv_ = 'old'; % 'old', 'none', 'unconstrained', 'CI_X' where X is the percent
 bootstrapping_nexis_sv_ = 0;
 resample_rate_nexis_sv_ = 0.8;
 niters_nexis_sv_ = 100;
 verbose_nexis_sv_ = 0;
 fmindisplay_nexis_sv_ = 0;
 datatype_nexis_sv_ = 'gene'; % 'gene', 'Yao', 'Tasic', 'Zeisel', 
-% 'Zhuang_Class', 'Zhuang_Subclass'
+% 'Zhuang_Class', 'Zhuang_Subclass', 'User-specified'
 datalist_nexis_sv_ = {'Trem2'}; % if names are used, requires a cell array
 % even for one element; can also supply numeric indices
 datapca_nexis_sv_ = 0;
@@ -60,10 +62,11 @@ validScalar = @(x) isnumeric(x) && isscalar(x) && (x>=0);
 validBoolean = @(x) isscalar(x) && (x==0 || x==1);
 validChar = @(x) ischar(x);
 validST = @(x) ismember(x,{'analytic','numeric'});
-validBoundsType = @(x) strcmp(x,'old') || strcmp(x(1:2),'CI');
+validBoundsType = @(x) strcmp(x,'old') || strcmp(x(1:2),'CI') || strcmp(x,'unconstrained')...
+    || strcmp(x,'none');
 validParam = @(x) (length(x) == 4);
 validDataTypenexis_sv = @(x) ismember(x,{'gene','Yao','Tasic','Zeisel',...
-    'Zhuang_Class','Zhuang_Subclass'});
+    'Zhuang_Class','Zhuang_Subclass','User-specified','random'});
 
 addParameter(ip, 'study', study_, validChar);
 addParameter(ip, 'C', C_);
@@ -78,6 +81,7 @@ addParameter(ip, 'solvetype', solvetype_, validST);
 addParameter(ip, 'volcorrect', volcorrect_, validBoolean);
 addParameter(ip, 'exclseed_costfun', exclseed_costfun_, validBoolean);
 addParameter(ip, 'excltpts_costfun', excltpts_costfun_);
+addParameter(ip, 'exclseed_outputs', exclseed_outputs_, validBoolean);
 addParameter(ip, 'logtrans', logtrans_);
 addParameter(ip, 'normtype', normtype_, validChar);
 addParameter(ip, 'Cnormtype', Cnormtype_, validChar);
@@ -195,25 +199,29 @@ else
 end
 
 % Define cell type matrix, U
-if ~isequal(ipR.datalist_nexis_sv,{'random'})
-    if ~isnumeric(ipR.datalist_nexis_sv)
-        ind_nexis_sv = NameIndex(ipR.datalist_nexis_sv,ipR.datatype_nexis_sv);
+if ~strcmp(ipR.datatype_nexis_sv,'User-specified')
+    if ~isequal(ipR.datalist_nexis_sv,{'random'}) % Don't use; outside-generated spatial null is better
+        if ~isnumeric(ipR.datalist_nexis_sv)
+            ind_nexis_sv = NameIndex(ipR.datalist_nexis_sv,ipR.datatype_nexis_sv);
+        else
+            ind_nexis_sv = ipR.datalist_nexis_sv;
+        end
+    
+        if strcmp(ipR.datatype_nexis_sv,'gene')
+            datstruct_gene = load([cd filesep 'raw_data_mouse' filesep ...
+                'GeneExpressionMaps.mat'],'GeneExpressionMaps');
+            U = datstruct_gene.GeneExpressionMaps.All.expression_426(:,ind_nexis_sv);        
+            % load([cd filesep 'raw_data_mouse' filesep 'Regional_Gene_Data.mat'],'regvgene_mean');
+            % U = regvgene_mean(:,ind_nexis_sv);
+        else
+            datstruct_ct = load([cd filesep 'raw_data_mouse' filesep 'CellTypeMaps.mat'],'CellTypeMaps');
+            U = datstruct_ct.CellTypeMaps.(ipR.datatype_nexis_sv).maps(:,ind_nexis_sv);  
+        end
     else
-        ind_nexis_sv = ipR.datalist_nexis_sv;
-    end
-
-    if strcmp(ipR.datatype_nexis_sv,'gene')
-        datstruct_gene = load([cd filesep 'raw_data_mouse' filesep ...
-            'GeneExpressionMaps.mat'],'GeneExpressionMaps');
-        U = datstruct_gene.GeneExpressionMaps.All.expression_426(:,ind_nexis_sv);        
-        % load([cd filesep 'raw_data_mouse' filesep 'Regional_Gene_Data.mat'],'regvgene_mean');
-        % U = regvgene_mean(:,ind_nexis_sv);
-    else
-        datstruct_ct = load([cd filesep 'raw_data_mouse' filesep 'CellTypeMaps.mat'],'CellTypeMaps');
-        U = datstruct_ct.GeneExpressionMaps.(ipR.datatype_nexis_sv).maps(:,ind_nexis_sv);  
+        U = rand(size(C,1),1);
     end
 else
-    U = rand(size(C,1),1);
+    U = ipR.U;
 end
 
 % Reorder U data if needed (IGNORING FOR NOW; should not use this code for
@@ -245,6 +253,9 @@ elseif strcmp(ipR.study(1:3),'GCI') || strcmp(ipR.study(1:3),'PFF')
 end
 
 % Mean-normalize gene/cell-type data, works best empirically
+if any(isnan(U))
+    U(isnan(U)) = 0; % Unsure if correct, but maybe best we can do for Zhuang CTs
+end
 U = U ./ mean(U,'omitmissing');
 if logical(ipR.datapca_nexis_sv) && (length(ipR.datalist_nexis_sv) > 1)
     U_mean = mean(U,2,'omitmissing');
@@ -305,25 +316,22 @@ if ~logical(ipR.bootstrapping_nexis_sv)
         end    
     end
 
-    if strcmp(ipR.bounds_type_nexis_sv,'none') && (size(param_inits,1) > 1)
-        param_init = median(param_inits); % Was originally mean, median probably better estimator
-        ub = param_init; % fix all global parameters
-        lb = param_init; % fix all global parameters
-    elseif strcmp(ipR.bounds_type_nexis_sv,'unconstrained') && (size(param_inits,1) > 1)
-        param_init = median(param_inits); % Was originally mean, median probably better estimator
-        ub = [param_init(1),Inf,Inf,1,0,0]; % fix gamma, unconstrain others
-        lb = [param_init(1),0,0,0,0,0]; % fix gamma, unconstrain others;
-    elseif strcmp(ipR.bounds_type_nexis_sv,'old') && (size(param_inits,1) > 1)
-        param_init = mean(param_inits); % Was originally mean, median probably better estimator
-        ub = [1.3*param_init(1:4),0,0]; % Vary within +/- 30%
-        lb = [0.7*param_init(1:4),0,0]; % Vary within +/- 30%
-    elseif (size(param_inits,1) == 1)
+    if size(param_inits,1) == 1
         param_init = param_inits;
-        ub = [param_init(1),10*param_init(2),10*param_init(3),1,0,0]; % fix gamma, very loosely constrain others;
-        lb = [param_init(1),0.1*param_init(2),0.1*param_init(3),0,0,0]; % fix gamma, very loosely constrain others;
     else
+        param_init = mean(param_inits); % Was originally mean, median probably better estimator        
+    end
+    if strcmp(ipR.bounds_type_nexis_sv,'none') % fix all global parameters
+        ub = param_init; 
+        lb = param_init; 
+    elseif strcmp(ipR.bounds_type_nexis_sv,'unconstrained') % fix gamma, very loosely constrain others
+        ub = [param_init(1),10*param_init(2),10*param_init(3),1,0,0];
+        lb = [param_init(1),0.1*param_init(2),0.1*param_init(3),0,0,0,0];
+    elseif strcmp(ipR.bounds_type_nexis_sv,'old') % Vary within +/- 30%
+        ub = [1.3*param_init(1:4),0,0]; 
+        lb = [0.7*param_init(1:4),0,0]; 
+    else % Use confidence interval
         prct = str2double(ipR.bounds_type_nexis_sv(4:end));
-        param_init = median(param_inits);
         ub = prctile(param_inits,((100-prct)/2)+prct,1); ub(1) = param_init(1); % use CI to bound all but gamma
         lb = prctile(param_inits,((100-prct)/2),1); lb(1) = param_init(1); % use CI to bound all but gamma
     end
@@ -333,14 +341,18 @@ if ~logical(ipR.bootstrapping_nexis_sv)
         ub(4) = 0.5;
         lb(4) = 0.5;
     end
+
+    if any(isnan(seed_location))
+        seed_location(isnan(seed_location)) = 0;
+    end
     
     mordervec = zeros(1,length(ipR.param_init));
-    for m = 1:length(param_init)
-        inclparam = (lb(m) ~= ub(m));
+    for m = 1:length(ipR.param_init)
+        inclparam = (ipR.lb(m) ~= ipR.ub(m));
         mordervec(m) = inclparam;
     end
     morder = 1 + sum(mordervec) + 2*n_types;
-    
+
     param_init = [param_init(1:4),zeros(1,n_types),zeros(1,n_types)];
     lb = [lb(1:4),-Inf(1,n_types),-Inf(1,n_types)];
     ub = [ub(1:4),Inf(1,n_types),Inf(1,n_types)];
@@ -391,7 +403,7 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     % else
     %     outputs.nexis_sv.Full.time_stamps = time_stamps_orig(tinds);
     % end
-    outputs.nexis_global.Full.time_stamps = time_stamps_orig;
+    outputs.nexis_sv.Full.time_stamps = time_stamps_orig;
     outputs.nexis_sv.Full.predicted = ynum;
     outputs.nexis_sv.Full.param_fit = param_num;
     outputs.nexis_sv.Full.fval = fval_num;
@@ -399,6 +411,7 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     outputs.nexis_sv.Full.init.C = C;
     outputs.nexis_sv.Full.init.U_norm = U;
     outputs.nexis_sv.Full.init.study = ipR.study;
+    outputs.nexis_sv.Full.init.use_dataspace = ipR.use_dataspace;
     outputs.nexis_sv.Full.init.solvetype = ipR.solvetype;
     outputs.nexis_sv.Full.init.volcorrect = ipR.volcorrect;
     outputs.nexis_sv.Full.init.normtype = ipR.normtype;
@@ -558,36 +571,33 @@ else
 
         fprintf('NexIS:SV Bootstrapping Iteration %d/%d\n',i,ipR.niters_nexis_sv);        
         n_types = size(U,2);
-        ndmflds = fieldnames(outputs.nexis_sv);
+        ndmflds = fieldnames(outputs.nexis_global);
         if length(ndmflds) == 1
-            param_inits = outputs.nexis_sv.Full.param_fit; 
+            param_inits = outputs.nexis_global.Full.param_fit; 
         else
-            param_inits = zeros((length(ndmflds)-1),length(outputs.nexis_sv.Full.param_fit));
+            param_inits = zeros((length(ndmflds)-1),length(outputs.nexis_global.Full.param_fit));
             for k = 1:(length(ndmflds)-1)
                 fld = ndmflds{k};
-                param_inits(k,:) = outputs.nexis_sv.(fld).param_fit;
+                param_inits(k,:) = outputs.nexis_global.(fld).param_fit;
             end    
         end
-
-        if strcmp(ipR.bounds_type_nexis_sv,'none') && (size(param_inits,1) > 1)
-            param_init = median(param_inits); % Was originally mean, median probably better estimator
-            ub = param_init; % fix all global parameters
-            lb = param_init; % fix all global parameters
-        elseif strcmp(ipR.bounds_type_nexis_sv,'unconstrained') && (size(param_inits,1) > 1)
-            param_init = median(param_inits); % Was originally mean, median probably better estimator
-            ub = [param_init(1),Inf,Inf,1,0,0]; % fix gamma, unconstrain others
-            lb = [param_init(1),0,0,0,0,0]; % fix gamma, unconstrain others;
-        elseif strcmp(ipR.bounds_type_nexis_sv,'old') && (size(param_inits,1) > 1)
-            param_init = mean(param_inits); % Was originally mean, median probably better estimator
-            ub = [1.3*param_init(1:4),0,0]; % Vary within +/- 30%
-            lb = [0.7*param_init(1:4),0,0]; % Vary within +/- 30%
-        elseif (size(param_inits,1) == 1)
+        
+        if size(param_inits,1) == 1
             param_init = param_inits;
-            ub = [param_init(1),10*param_init(2),10*param_init(3),1,0,0]; % fix gamma, very loosely constrain others;
-            lb = [param_init(1),0.1*param_init(2),0.1*param_init(3),0,0,0]; % fix gamma, very loosely constrain others;
         else
+            param_init = mean(param_inits); % Was originally mean, median probably better estimator        
+        end
+        if strcmp(ipR.bounds_type_nexis_sv,'none') % fix all global parameters
+            ub = param_init; 
+            lb = param_init; 
+        elseif strcmp(ipR.bounds_type_nexis_sv,'unconstrained') % fix gamma, very loosely constrain others
+            ub = [param_init(1),10*param_init(2),10*param_init(3),1,0,0];
+            lb = [param_init(1),0.1*param_init(2),0.1*param_init(3),0,0,0,0];
+        elseif strcmp(ipR.bounds_type_nexis_sv,'old') % Vary within +/- 30%
+            ub = [1.3*param_init(1:4),0,0]; 
+            lb = [0.7*param_init(1:4),0,0]; 
+        else % Use confidence interval
             prct = str2double(ipR.bounds_type_nexis_sv(4:end));
-            param_init = median(param_inits);
             ub = prctile(param_inits,((100-prct)/2)+prct,1); ub(1) = param_init(1); % use CI to bound all but gamma
             lb = prctile(param_inits,((100-prct)/2),1); lb(1) = param_init(1); % use CI to bound all but gamma
         end
@@ -598,9 +608,13 @@ else
             lb(4) = 0.5;
         end
         
+        if any(isnan(seed_location))
+            seed_location(isnan(seed_location)) = 0;
+        end
+
         mordervec = zeros(1,length(ipR.param_init));
-        for m = 1:length(param_init)
-            inclparam = (lb(m) ~= ub(m));
+        for m = 1:length(ipR.param_init)
+            inclparam = (ipR.lb(m) ~= ipR.ub(m));
             mordervec(m) = inclparam;
         end
         morder = 1 + sum(mordervec) + 2*n_types;
@@ -676,6 +690,7 @@ else
         outputs.nexis_sv.(fldname).init.seed = seed_save;
         outputs.nexis_sv.(fldname).init.C = C;
         outputs.nexis_sv.(fldname).init.study = ipR.study;
+        outputs.nexis_sv.(fldname).init.use_dataspace = ipR.use_dataspace;
         outputs.nexis_sv.(fldname).init.solvetype = ipR.solvetype;
         outputs.nexis_sv.(fldname).init.volcorrect = ipR.volcorrect;
         outputs.nexis_sv.(fldname).init.normtype = ipR.normtype;
@@ -796,11 +811,11 @@ else
         seed_location(isnan(seed_location)) = 0;
     end
 
-    fldnames = fieldnames(outputs.nexis_global);
-    param_fits = zeros(length(fldnames),length(outputs.nexis_global.(fldnames{1}).param_fit));
+    fldnames = fieldnames(outputs.nexis_sv);
+    param_fits = zeros(length(fldnames),length(outputs.nexis_sv.(fldnames{1}).param_fit));
     for i = 1:length(fldnames)
         fldname = fldnames{i};
-        param_fits(i,:) = outputs.nexis_global.(fldname).param_fit;
+        param_fits(i,:) = outputs.nexis_sv.(fldname).param_fit;
     end
     
     % Evaluate NexIS:global with best estimate of parameters

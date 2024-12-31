@@ -1,19 +1,22 @@
 function summarytable = Output2Table(outputs,writeout,filename,filepath)
+% Function that unpacks output structs from NexIS_global.m or NexIS_SV.m
+% into a table with relevant summary statistics and optimized parameter 
+% values
 
 fldnames = fieldnames(outputs);
 if nargin < 4
     filepath = cd;
     if nargin < 3
         datestr = datetime('today');
-        if ~ismember('endm',fldnames)
+        if ~ismember('nexis_sv',fldnames)
             filename = ['summary_Nexis_mouse_' outputs.nexis_global.Full.init.study...
                 '_global_' datestr];             
         else
-            typename = outputs.endm.Full.init.datalist_endm(1);
+            typename = outputs.nexis_sv.Full.init.datalist_nexis_sv(1);
             if isnumeric(typename)
-                typename = IndexName(typename,outputs.endm.Full.init.datatype_endm);
+                typename = IndexName(typename,outputs.nexis_sv.Full.init.datatype_nexis_sv);
             end
-            filename = ['summary_Nexis_mouse_' outputs.endm.Full.init.study...
+            filename = ['summary_Nexis_mouse_' outputs.nexis_sv.Full.init.study...
                 '_' typename{1} '_' datestr];  
         end
         if nargin < 2
@@ -24,21 +27,23 @@ end
             
 rownames = fldnames.';
 columnnames = cell(1,1); vartypes = columnnames;
-if ismember('endm',fldnames)
-    if strcmp(outputs.endm.Full.init.datatype_endm,'gene')
-        colstr1 = 'Gene';
-    else
-        colstr1 = 'Cell Type';
-    end
-    typenames = outputs.endm.Full.init.datalist_endm;
-    for i = 1:length(typenames)
-        columnnames{i} = sprintf([colstr1 ' %d'],i);
-        vartypes{i} = 'string';
-    end
-else
-   columnnames{1} = 'Gene 1'; 
-   vartypes{1} = 'string';
-end
+% if ismember('nexis_sv',fldnames)
+%     if strcmp(outputs.nexis_sv.Full.init.datatype_nexis_sv,'gene')
+%         colstr1 = 'Gene';
+%     else
+%         colstr1 = 'Cell Type';
+%     end
+%     typenames = outputs.nexis_sv.Full.init.datalist_nexis_sv;
+%     for i = 1:length(typenames)
+%         columnnames{i} = sprintf([colstr1 ' %d'],i);
+%         vartypes{i} = 'string';
+%     end
+% else
+   % columnnames{1} = 'Gene 1'; 
+   % vartypes{1} = 'string';
+% end
+columnnames{1} = 'SV Factor'; 
+vartypes{1} = 'string';
 columnnames{end+1} = 'Uses PCA'; vartypes{end+1} = 'string';    
 columnnames{end+1} = 'Cost Function'; vartypes{end+1} = 'string';
 columnnames{end+1} = 'gamma (Mean)'; vartypes{end+1} = 'double';
@@ -50,13 +55,13 @@ columnnames{end+1} = 'beta (95% CI)'; vartypes{end+1} = 'cell';
 columnnames{end+1} = 's (Mean)'; vartypes{end+1} = 'double';
 columnnames{end+1} = 's (95% CI)'; vartypes{end+1} = 'cell';
 
-if ismember('endm',fldnames) && (length(outputs.endm.Full.init.datalist_endm)>1)...
-        && ~logical(outputs.endm.Full.init.datapca_endm)
-    for i = 1:length(outputs.endm.Full.init.datalist_endm)
+if ismember('nexis_sv',fldnames) && (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1)...
+        && ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+    for i = 1:length(outputs.nexis_sv.Full.init.datalist_nexis_sv)
         columnnames{end+1} = sprintf('b%d (Mean)',i); vartypes{end+1} = 'double';
         columnnames{end+1} = sprintf('b%d (95% CI)',i); vartypes{end+1} = 'cell';
     end
-    for i = 1:length(outputs.endm.Full.init.datalist_endm)
+    for i = 1:length(outputs.nexis_sv.Full.init.datalist_nexis_sv)
         columnnames{end+1} = sprintf('p%d (Mean)',i); vartypes{end+1} = 'double';
         columnnames{end+1} = sprintf('p%d (95% CI)',i); vartypes{end+1} = 'cell';
     end
@@ -86,10 +91,10 @@ summarytable.Properties.RowNames = rownames;
 summarytable.Properties.VariableNames = columnnames;
 for k = 1:length(rownames)
     index = 1;
-    if ismember('endm',fldnames)
-        typenames = outputs.endm.Full.init.datalist_endm;
+    if ismember('nexis_sv',fldnames)
+        typenames = outputs.nexis_sv.Full.init.datalist_nexis_sv;
         if isnumeric(typenames)
-            typenames = IndexName(typenames,outputs.endm.Full.init.datatype_endm);
+            typenames = IndexName(typenames,outputs.nexis_sv.Full.init.datatype_nexis_sv);
         end
 
         for i = 1:length(typenames)
@@ -103,11 +108,11 @@ for k = 1:length(rownames)
         summarytable{k,index} = "None"; index = index + 1;
     end
     
-    if ismember('endm',fldnames)
+    if ismember('nexis_sv',fldnames)
         if strcmp('nexis_global',rownames{k})
             summarytable{k,index} = "No"; index = index + 1;
         else
-            if ~logical(outputs.endm.Full.init.datapca_endm)
+            if ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
                 summarytable{k,index} = "No"; index = index + 1;
             else
                 summarytable{k,index} = "Yes"; index = index + 1;
@@ -126,17 +131,17 @@ for k = 1:length(rownames)
         % if ~logical(outputs.(fldnames{k}).Full.init.w_dir)
         %     inclinds(4) = NaN;
         % end
-        % if strcmp('endm',fldnames{k}) && (length(outputs.endm.Full.init.datalist_endm)>1)  && ...
-        %         ~logical(outputs.endm.Full.init.datapca_endm)
-        %     inclinds(5:(4+length(outputs.endm.Full.init.datalist_endm))) = NaN;
+        % if strcmp('nexis_sv',fldnames{k}) && (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1)  && ...
+        %         ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+        %     inclinds(5:(4+length(outputs.nexis_sv.Full.init.datalist_nexis_sv))) = NaN;
         % else
         %     inclinds(5) = NaN;
         % end
         params = params(~isnan(inclinds));
-        if strcmp('nexis_global',fldnames{k}) && ismember('endm',fldnames) && ...
-                (length(outputs.endm.Full.init.datalist_endm)>1) && ...
-                ~logical(outputs.endm.Full.init.datapca_endm)
-            params = [params, zeros(1,2*(length(outputs.endm.Full.init.datalist_endm)-1))];
+        if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) && ...
+                (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1) && ...
+                ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+            params = [params, zeros(1,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv)-1))];
         end
         for i = 1:length(params)
             summarytable{k,index} = params(i); index = index + 1;
@@ -154,19 +159,19 @@ for k = 1:length(rownames)
         % if ~logical(outputs.(fldnames{k}).Full.init.w_dir)
         %     inclinds(4) = NaN;
         % end
-        % if strcmp('endm',fldnames{k}) && (length(outputs.endm.Full.init.datalist_endm)>1)  && ...
-        %         ~logical(outputs.endm.Full.init.datapca_endm)
-        %     inclinds(5:(4+length(outputs.endm.Full.init.datalist_endm))) = NaN;
+        % if strcmp('nexis_sv',fldnames{k}) && (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1)  && ...
+        %         ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+        %     inclinds(5:(4+length(outputs.nexis_sv.Full.init.datalist_nexis_sv))) = NaN;
         % else
         %     inclinds(5) = NaN;
         % end
         params_mean = params_mean(~isnan(inclinds)); 
         params_ci95 = params_ci95(:,~isnan(inclinds));
-        if strcmp('nexis_global',fldnames{k}) && ismember('endm',fldnames) &&...
-                (length(outputs.endm.Full.init.datalist_endm)>1) &&...
-                ~logical(outputs.endm.Full.init.datapca_endm)
-            params_mean = [params_mean, zeros(1,2*(length(outputs.endm.Full.init.datalist_endm)-1))];
-            params_ci95 = [params_ci95, zeros(2,2*(length(outputs.endm.Full.init.datalist_endm))-1)];
+        if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) &&...
+                (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1) &&...
+                ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+            params_mean = [params_mean, zeros(1,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv)-1))];
+            params_ci95 = [params_ci95, zeros(2,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv))-1)];
         end
         for i = 1:length(params_mean)
             summarytable{k,index} = params_mean(i); index = index + 1;
@@ -188,18 +193,14 @@ if logical(writeout)
     writetable(summarytable,[filepath filesep filename '.csv'],'WriteRowNames',true)
 end
 
-    function names = IndexName(indices,dattypeendm)
-        if strcmp(dattypeendm,'gene')
-            load([cd filesep 'raw_data_mouse' filesep 'gene_names_trans.mat'],'gene_names_trans');
-            namescell = gene_names_trans;
-        elseif strcmp(dattypeendm,'ct_tasic')
-            load([cd filesep 'raw_data_mouse' filesep 'classkey_tasic.mat'],'classkey_tasic');
-            namescell = classkey_tasic;
-        elseif strcmp(dattypeendm,'ct_zeisel')
-            load([cd filesep 'raw_data_mouse' filesep 'classkey_zeisel.mat'],'classkey_zeisel');
-            namescell = classkey_zeisel;
+    function names = IndexName(indices,dattypenexis_sv)
+        if strcmp(dattypenexis_sv,'gene')
+            datstruct = load([cd filesep 'raw_data_mouse' filesep 'GeneExpressionMaps.mat'],'GeneExpressionMaps');
+            namescell = datstruct.GeneExpressionMaps.All.gene_names;
+        else
+            datstruct = load([cd filesep 'raw_data_mouse' filesep 'CellTypeMaps.mat'],'CellTypeMaps');
+            namescell = datstruct.CellTypeMaps.(dattypenexis_sv).classkey;
         end
-        
         names = namescell(indices);
     end
 end

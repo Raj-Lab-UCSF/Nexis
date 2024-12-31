@@ -252,6 +252,7 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     outputs.nexis_global.Full.init.seed = seed_save;
     outputs.nexis_global.Full.init.C = C;
     outputs.nexis_global.Full.init.study = ipR.study;
+    outputs.nexis_global.Full.init.use_dataspace = ipR.use_dataspace;
     outputs.nexis_global.Full.init.solvetype = ipR.solvetype;
     outputs.nexis_global.Full.init.volcorrect = ipR.volcorrect;
     outputs.nexis_global.Full.init.normtype = ipR.normtype;
@@ -505,6 +506,7 @@ else
         outputs.nexis_global.(fldname).init.seed = seed_save;
         outputs.nexis_global.(fldname).init.C = C;
         outputs.nexis_global.(fldname).init.study = ipR.study;
+        outputs.nexis_global.(fldname).init.use_dataspace = ipR.use_dataspace;
         outputs.nexis_global.(fldname).init.solvetype = ipR.solvetype;
         outputs.nexis_global.(fldname).init.volcorrect = ipR.volcorrect;
         outputs.nexis_global.(fldname).init.normtype = ipR.normtype;
