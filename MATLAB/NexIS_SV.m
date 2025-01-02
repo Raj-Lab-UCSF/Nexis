@@ -9,12 +9,11 @@ function outputs = NexIS_SV(varargin)
 % param(6) = p
 
 % Define defaults and set inputs
-study_ = 'User-specified'; % double-check this
+study_ = 'User_specified'; % double-check this
 C_ = [];
 data_ = [];
 tpts_ = [];
 seed_ = [];
-U_ = [];
 use_dataspace_ = 0;
 matdir_ = [cd filesep 'raw_data_mouse'];
 
@@ -51,8 +50,8 @@ niters_nexis_sv_ = 100;
 verbose_nexis_sv_ = 0;
 fmindisplay_nexis_sv_ = 0;
 datatype_nexis_sv_ = 'gene'; % 'gene', 'Yao', 'Tasic', 'Zeisel', 
-% 'Zhuang_Class', 'Zhuang_Subclass', 'User-specified'
-datalist_nexis_sv_ = {'Trem2'}; % if names are used, requires a cell array
+% 'Zhuang_Class', 'Zhuang_Subclass', 'User_specified'
+datalist_nexis_sv_ = {'Trem2'}; % if names are used, requires a cell array. Can be numeric array
 % even for one element; can also supply numeric indices
 datapca_nexis_sv_ = 0;
 flowthresh_ = 99.93;
@@ -66,7 +65,7 @@ validBoundsType = @(x) strcmp(x,'old') || strcmp(x(1:2),'CI') || strcmp(x,'uncon
     || strcmp(x,'none');
 validParam = @(x) (length(x) == 4);
 validDataTypenexis_sv = @(x) ismember(x,{'gene','Yao','Tasic','Zeisel',...
-    'Zhuang_Class','Zhuang_Subclass','User-specified','random'});
+    'Zhuang_Class','Zhuang_Subclass','User_specified','random'});
 
 addParameter(ip, 'study', study_, validChar);
 addParameter(ip, 'C', C_);
@@ -199,7 +198,7 @@ else
 end
 
 % Define cell type matrix, U
-if ~strcmp(ipR.datatype_nexis_sv,'User-specified')
+if ~strcmp(ipR.datatype_nexis_sv,'User_specified') && isempty(ipR.U)
     if ~isequal(ipR.datalist_nexis_sv,{'random'}) % Don't use; outside-generated spatial null is better
         if ~isnumeric(ipR.datalist_nexis_sv)
             ind_nexis_sv = NameIndex(ipR.datalist_nexis_sv,ipR.datatype_nexis_sv);
@@ -221,7 +220,7 @@ if ~strcmp(ipR.datatype_nexis_sv,'User-specified')
         U = rand(size(C,1),1);
     end
 else
-    U = ipR.U;
+    U = ipR.datalist_nexis_sv;
 end
 
 % Reorder U data if needed (IGNORING FOR NOW; should not use this code for
@@ -276,12 +275,12 @@ outputs.nexis_sv = struct;
 if ~logical(ipR.bootstrapping_nexis_sv)
     fprintf('Creating Optimal NexIS:SV Model\n');
     time_stamps = tpts.(ipR.study);
-    if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
+    if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to connectome space for simulation/comparison
         pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
-        if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
+        if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to connectome space for model init.
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
             seed_location = pathology(:,1);
@@ -524,7 +523,7 @@ else
     for i = 1:ipR.niters_nexis_sv
         fldname = sprintf('Iter_%d',i);
         time_stamps = tpts.(ipR.study);
-        if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
+        if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to connectome space for simulation/comparison
             pathology_raw = data426.(ipR.study);
             notnaninds = find(~isnan(pathology_raw(:,1)));
             settonansize = round((1-ipR.resample_rate)*length(notnaninds));
@@ -538,7 +537,7 @@ else
             pathology_orig = pathology;
             pathology(isnan(pathology_raw(:,1)),:) = NaN;
             time_stamps_orig = time_stamps;
-            if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to CCF space for model init.
+            if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to connectome space for model init.
                 seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
             else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
                 seed_location = pathology(:,1);
@@ -779,12 +778,12 @@ else
     %
     fprintf('Creating Optimal NexIS:SV Model\n');
     time_stamps = tpts.(ipR.study);
-    if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
+    if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to connectome space for simulation/comparison
         pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
-        if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to CCF space for model init.
+        if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to connectome space for model init.
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
             seed_location = pathology(:,1);
@@ -824,7 +823,7 @@ else
 
     % Store all outputs
     if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) 
-        pathology_fvalcalc = pathology; % need pathology in CCF space for cost function input
+        pathology_fvalcalc = pathology; % need pathology in connectome space for cost function input
         pathology = CCFToData(pathology,ipR.study,ipR.matdir);% Convert back to data space
         pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
         yopt = CCFToData(yopt,ipR.study,ipR.matdir);
@@ -837,8 +836,12 @@ else
             % yopt_save = yopt;
         end
     else
-        pathology_fvalcalc = pathology; % need pathology in CCF space for cost function input
-        seed_save = seed_location;
+        pathology_fvalcalc = pathology; % need pathology in connectome space for cost function input
+        if isnan(seed426.(ipR.study))
+            seed_save = NaN;
+        else
+            seed_save = seed_location;
+        end
         yopt_save = yopt;
     end
 

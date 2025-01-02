@@ -601,15 +601,279 @@ if writetofile
     writetable(sumtable_Hurtado,[filepath_out filesep tablename_Hurtado '.csv'],'WriteRowNames',true)
     % Save .mat file
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
-end 
+end
 
-%% 2.3 Preloaded a-syn studies (simple test)
+%% 2.3 De novo NexIS:global, with and without bootstrap, Brundin a-syn studies only
+% Running NexIS, testing out running NexIS:global within the NexIS:SV call
+% as well as all combinations of bootstrapping (for completeness)
+rng(0); clear; clc;
+studylist = {'asyn_mouse','asyn_human'}; % ***Of preloaded, only these can be run with SV***
+wdir = 1;
+volcorrect = 1;
+usedataspace = 0; % ***Required to be 0 for a-syn, all data in native connectome space***
+param_init = [NaN,0,1,0.5]; % Initial fmincon parameter guesses; {gamma, alpha, beta, s}
+ub = [Inf,Inf,Inf,1]; % Upper bounds for fmincon
+lb = zeros(1,4); % Lower bounds for fmincon
+excltpts_costfun = []; % Exclude selected time points from cost function
+bootstrapping_glob = [0,1]; % Flag for bootstrapping
+niters_glob = 3;
+bootstrapping_sv = [0,1]; % Flag for bootstrapping for SV
+bounds_type_nexis_sv = {'old','CI_95'}; % Bounds type for NexIS:global parameters
+niters_sv = 3; % Number of bootstrapped iterations for SV
+
+% Pull name of one cell type
+nexsvnames = cell(2,1);
+nexsvnames{1} = 'Zeisel';
+nexsvnames{2} = 'HBNOR'; % Single SV factor for debugging purposes
+
+% Table output parameters
+writetofile = 1; % Create .csv from MATLAB table
+filename_out = 'NexIS_Wrapper_SV_2-3_WithBootstrap_a-syn'; % Name of output file
+filepath_out = '~/Documents/MATLAB/Nexis_Project/Results_Files_NexISWrapper'; % Save path
+
+% Run model and create output tables for each dataset, if writetofile = 1
+outputs_all = struct;
+numsims = length(studylist)*length(bootstrapping_sv)*length(bootstrapping_glob)*size(nexsvnames,2);
+for i = 1:length(studylist)
+    study_i = studylist{i};
+    tablename = [filename_out '_' study_i]; % Create one output table per study
+    sumtable_i = [];
+    for j = 1:length(bootstrapping_glob)
+        for k = 1:length(bootstrapping_sv)
+            for m = 1:size(nexsvnames,2)
+                tablerowname = ['SV, ' study_i ', '];
+                if bootstrapping_glob(j)
+                    tablerowname = [tablerowname 'with b.s. glob, '];
+                else
+                    tablerowname = [tablerowname 'no b.s. glob, '];
+                end
+                if bootstrapping_sv(k)
+                    tablerowname = [tablerowname 'with b.s. sv'];
+                else
+                    tablerowname = [tablerowname 'no b.s. sv'];
+                end
+                simno = size(nexsvnames,2)*length(bootstrapping_sv)*length(bootstrapping_glob)*(i-1)...
+                    + size(nexsvnames,2)*(k-1) + size(nexsvnames,2)*length(bootstrapping_glob)*(j-1) + m;
+                fprintf('NexIS Wrapper Test 2.3, %d/%d\n',simno,numsims)
+                fprintf('Simulation: %s\n',[tablerowname ', ' nexsvnames{1,m} ' ' nexsvnames{2,m}])
+                outputs_sv_ijkm = NexIS_SV('study',study_i,...
+                                              'w_dir',wdir,...
+                                              'use_dataspace',usedataspace,...
+                                              'bootstrapping',bootstrapping_glob(j),...
+                                              'niters',niters_glob,...
+                                              'volcorrect',volcorrect,...
+                                              'param_init',param_init,...
+                                              'ub',ub,...
+                                              'lb',lb,...
+                                              'excltpts_costfun',excltpts_costfun,...
+                                              'datatype_nexis_sv',nexsvnames{1,m},...
+                                              'datalist_nexis_sv',nexsvnames(2,m),...                
+                                              'bootstrapping_nexis_sv',bootstrapping_sv(k),...              
+                                              'bounds_type_nexis_sv',bounds_type_nexis_sv{k},...
+                                              'niters_nexis_sv',niters_sv);
+                fieldname_ijkm = [study_i '_glob_bs_' num2str(bootstrapping_glob(j))...
+                    '_sv_bs_' num2str(bootstrapping_sv(k)) '_' nexsvnames{2,m}];
+                outputs_all.(fieldname_ijkm) = outputs_sv_ijkm;
+                sumtable_ijkm = Output2Table(outputs_sv_ijkm,0,'null','null'); % create table row
+                sumtable_ijkm.Properties.RowNames{1} = ['Global' tablerowname(3:end)]; % label table row
+                sumtable_ijkm.Properties.RowNames{2} = [tablerowname ', Factor ' num2str(m)]; % label table row
+                if m == 1
+                    sumtable_i = [sumtable_i; sumtable_ijkm]; % add row to table
+                else
+                    sumtable_i = [sumtable_i; sumtable_ijkm(2,:)]; % add row to table
+                end
+            end
+        end
+    end
+    if writetofile
+        writetable(sumtable_i,[filepath_out filesep tablename '.csv'],'WriteRowNames',true)
+    end
+end
+if writetofile
+    save([filepath_out filesep filename_out '.mat'],'outputs_all');
+end
 
 %% 2.4 No bootstrapping, user-specified connectome & pathology
-% Deal with later
+% Loading previously run NexIS_global struct. Not required to do this to run
+% NexIS:SV, but recommended for efficiency reasons, particularly if running
+% through multiple factors (i.e., genes, cell types) for the same pathology
+% dataset
+rng(0); clear; clc;
+filename_out = 'NexIS_Wrapper_SV_2-4_NoBootstrap_user-specified'; % Name of output file
+filename_in_glob = 'NexIS_Wrapper_Global_1-4_NoBootstrap_user-specified'; % NexIS:global input file
+filepath_in = '~/Documents/MATLAB/Nexis_Project/Results_Files_NexISWrapper'; % Load path, sims
+filepath_out = filepath_in; % Save path
+writetofile = 1;
+
+% Define U vectors a priori instead of calling one
+nexsvnames = cell(2,2);
+nexsvnames{1,1} = 'User_specified';
+nexsvnames{2,1} = rand(426,1); % Know n_ROI ahead of time
+nexsvnames{1,2} = 'User_specified';
+nexsvnames{2,2} = randn(426,1);
+
+% Running NexIS:SV (Exhaustive test of no bootstrap)
+nexglob_outputs = load([filepath_in filesep filename_in_glob '.mat'],'outputs_all');
+mdlinstances = fieldnames(nexglob_outputs.outputs_all);
+bootstrapping_sv = 0; % Flag for bootstrapping for SV
+bounds_type_nexis_sv = 'unconstrained'; % Bounds type for NexIS:global parameters
+niters_sv = 3; % Number of bootstrapped iterations for SV
+outputs_all = struct;
+numsims = length(mdlinstances)*size(nexsvnames,2);
+for i = 1:length(mdlinstances)
+    % Grab each previously run NexIS:global instance
+    mdlinstance_i = mdlinstances{i};
+    tablename_i = [filename_out '_' mdlinstance_i]; % Create one output table per output instance
+    outputs_i = nexglob_outputs.outputs_all.(mdlinstance_i);
+    outputs_i_inputstruct = outputs_i.nexis_global.Full;
+    % Pull inputs from NexIS:global instance
+    study_i = outputs_i_inputstruct.init.study;
+    C_i = outputs_i_inputstruct.init.C;
+    data_i = outputs_i_inputstruct.data;
+    seed_i = outputs_i_inputstruct.init.seed;
+    if isnan(seed_i) % Check if simulation was run from baseline
+        data_i = [outputs_i_inputstruct.baseline, data_i];
+    end
+    ts_i = outputs_i_inputstruct.time_stamps;
+    wdir_i = outputs_i_inputstruct.init.w_dir;
+    volcorrect_i = outputs_i_inputstruct.init.volcorrect;
+    usedataspace_i = outputs_i_inputstruct.init.use_dataspace;
+    excltpts_costfun_i = outputs_i_inputstruct.init.excltpts_costfun;
+    bootstrapping_glob_i = outputs_i_inputstruct.init.bootstrapping;
+    % Output table row definitions
+    sumtable_i = [];
+    tablerowname = ['SV, ' study_i '_Data'];
+    for j = 1:size(nexsvnames,2)
+        simno = size(nexsvnames,2)*(i-1) + j;
+        fieldname_ij = [mdlinstance_i '_' nexsvnames{1,j} '_Factor_' num2str(j)];
+        fprintf('NexIS Wrapper Test 2.4, %d/%d\n',simno,numsims)
+        fprintf('Simulation: %s\n',[tablerowname ', ' nexsvnames{1,j} '_Factor_' num2str(j)])
+        outputs_nsv_ij = NexIS_SV('outputs_nexisglobal',outputs_i,...                                  
+                                  'C',C_i,...
+                                  'data',data_i,...
+                                  'seed',seed_i,...
+                                  'tpts',ts_i,...
+                                  'w_dir',wdir_i,...
+                                  'study', study_i,...
+                                  'use_dataspace',usedataspace_i,...
+                                  'bootstrapping',bootstrapping_glob_i,...
+                                  'volcorrect',volcorrect_i,...
+                                  'datatype_nexis_sv',nexsvnames{1,j},...
+                                  'datalist_nexis_sv',nexsvnames{2,j},...                
+                                  'bootstrapping_nexis_sv',bootstrapping_sv,...              
+                                  'bounds_type_nexis_sv',bounds_type_nexis_sv,...
+                                  'niters_nexis_sv',niters_sv);
+        outputs_all.(fieldname_ij) = outputs_nsv_ij;
+        sumtable_ij = Output2Table(outputs_nsv_ij,0,'null','null'); % create table row
+        sumtable_ij.Properties.RowNames{1} = ['Global' tablerowname(3:end)]; % label table row
+        sumtable_ij.Properties.RowNames{2} = [tablerowname ', Factor ' num2str(j)]; % label table row
+        if j == 1
+            sumtable_i = [sumtable_i; sumtable_ij]; % add row to table
+        else
+            sumtable_i = [sumtable_i; sumtable_ij(2,:)]; % add row to table
+        end
+    end
+    if writetofile
+        writetable(sumtable_i,[filepath_out filesep tablename_i '.csv'],'WriteRowNames',true)
+    end
+end
+
+if writetofile
+    % Save .mat file
+    save([filepath_out filesep filename_out '.mat'],'outputs_all');
+end 
 
 %% 2.5 With bootstrapping, user-specified connectome & pathology
-% Deal with later
+% Loading previously run NexIS_global struct. Not required to do this to run
+% NexIS:SV, but recommended for efficiency reasons, particularly if running
+% through multiple factors (i.e., genes, cell types) for the same pathology
+% dataset
+rng(0); clear; clc;
+filename_out = 'NexIS_Wrapper_SV_2-5_WithBootstrap_user-specified'; % Name of output file
+filename_in_glob = 'NexIS_Wrapper_Global_1-5_WithBootstrap_user-specified'; % NexIS:global input file
+filepath_in = '~/Documents/MATLAB/Nexis_Project/Results_Files_NexISWrapper'; % Load path, sims
+filepath_out = filepath_in; % Save path
+writetofile = 1;
+
+% Define U vectors a priori instead of calling one
+nexsvnames = cell(2,2);
+nexsvnames{1,1} = 'User_specified';
+nexsvnames{2,1} = rand(426,1); % Know n_ROI ahead of time
+nexsvnames{1,2} = 'User_specified';
+nexsvnames{2,2} = randn(426,1);
+
+% Running NexIS:SV (Exhaustive test of no bootstrap)
+nexglob_outputs = load([filepath_in filesep filename_in_glob '.mat'],'outputs_all');
+mdlinstances = fieldnames(nexglob_outputs.outputs_all);
+bootstrapping_sv = 1; % Flag for bootstrapping for SV
+bounds_type_nexis_sv = 'unconstrained'; % Bounds type for NexIS:global parameters
+niters_sv = 3; % Number of bootstrapped iterations for SV
+outputs_all = struct;
+numsims = length(mdlinstances)*size(nexsvnames,2);
+sumtable_IbaHippInj = []; % One large table per study; predetermined to be 2
+sumtable_Hurtado = []; % One large table per study; predetermined to be 2
+for i = 1:length(mdlinstances)
+    % Grab each previously run NexIS:global instance
+    mdlinstance_i = mdlinstances{i};
+    tablename_i = [filename_out '_' mdlinstance_i]; % Create one output table per output instance
+    outputs_i = nexglob_outputs.outputs_all.(mdlinstance_i);
+    outputs_i_inputstruct = outputs_i.nexis_global.Full;
+    % Pull inputs from NexIS:global instance
+    study_i = outputs_i_inputstruct.init.study;
+    C_i = outputs_i_inputstruct.init.C;
+    data_i = outputs_i_inputstruct.data;
+    seed_i = outputs_i_inputstruct.init.seed;
+    if isnan(seed_i) % Check if simulation was run from baseline
+        data_i = [outputs_i_inputstruct.baseline, data_i];
+    end
+    ts_i = outputs_i_inputstruct.time_stamps;
+    wdir_i = outputs_i_inputstruct.init.w_dir;
+    volcorrect_i = outputs_i_inputstruct.init.volcorrect;
+    usedataspace_i = outputs_i_inputstruct.init.use_dataspace;
+    excltpts_costfun_i = outputs_i_inputstruct.init.excltpts_costfun;
+    bootstrapping_glob_i = outputs_i_inputstruct.init.bootstrapping;
+    % Output table row definitions
+    sumtable_i = [];
+    tablerowname = ['SV, ' study_i '_Data'];
+    for j = 1:size(nexsvnames,2)
+        simno = size(nexsvnames,2)*(i-1) + j;
+        fieldname_ij = [mdlinstance_i '_' nexsvnames{1,j} '_Factor_' num2str(j)];
+        fprintf('NexIS Wrapper Test 2.5, %d/%d\n',simno,numsims)
+        fprintf('Simulation: %s\n',[tablerowname ', ' nexsvnames{1,j} '_Factor_' num2str(j)])
+        outputs_nsv_ij = NexIS_SV('outputs_nexisglobal',outputs_i,...                                  
+                                  'C',C_i,...
+                                  'data',data_i,...
+                                  'seed',seed_i,...
+                                  'tpts',ts_i,...
+                                  'w_dir',wdir_i,...
+                                  'study', study_i,...
+                                  'use_dataspace',usedataspace_i,...
+                                  'bootstrapping',bootstrapping_glob_i,...
+                                  'volcorrect',volcorrect_i,...
+                                  'datatype_nexis_sv',nexsvnames{1,j},...
+                                  'datalist_nexis_sv',nexsvnames{2,j},...                
+                                  'bootstrapping_nexis_sv',bootstrapping_sv,...              
+                                  'bounds_type_nexis_sv',bounds_type_nexis_sv,...
+                                  'niters_nexis_sv',niters_sv);
+        outputs_all.(fieldname_ij) = outputs_nsv_ij;
+        sumtable_ij = Output2Table(outputs_nsv_ij,0,'null','null'); % create table row
+        sumtable_ij.Properties.RowNames{1} = ['Global' tablerowname(3:end)]; % label table row
+        sumtable_ij.Properties.RowNames{2} = [tablerowname ', Factor ' num2str(j)]; % label table row
+        if j == 1
+            sumtable_i = [sumtable_i; sumtable_ij]; % add row to table
+        else
+            sumtable_i = [sumtable_i; sumtable_ij(2,:)]; % add row to table
+        end
+    end
+    if writetofile
+        writetable(sumtable_i,[filepath_out filesep tablename_i '.csv'],'WriteRowNames',true)
+    end
+end
+
+if writetofile
+    % Save .mat file
+    save([filepath_out filesep filename_out '.mat'],'outputs_all');
+end 
 
 %% 3 Relevant plotting of outputs
 % Deal with later

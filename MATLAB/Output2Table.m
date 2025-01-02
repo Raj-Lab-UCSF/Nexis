@@ -1,7 +1,7 @@
 function summarytable = Output2Table(outputs,writeout,filename,filepath)
 % Function that unpacks output structs from NexIS_global.m or NexIS_SV.m
 % into a table with relevant summary statistics and optimized parameter 
-% values
+% values. NOTE: Changed from mean to median (1/2/25)
 
 fldnames = fieldnames(outputs);
 if nargin < 4
@@ -46,30 +46,50 @@ columnnames{1} = 'SV Factor';
 vartypes{1} = 'string';
 columnnames{end+1} = 'Uses PCA'; vartypes{end+1} = 'string';    
 columnnames{end+1} = 'Cost Function'; vartypes{end+1} = 'string';
-columnnames{end+1} = 'gamma (Mean)'; vartypes{end+1} = 'double';
+columnnames{end+1} = 'gamma (Median)'; vartypes{end+1} = 'double';
 columnnames{end+1} = 'gamma (95% CI)'; vartypes{end+1} = 'cell';
-columnnames{end+1} = 'alpha (Mean)'; vartypes{end+1} = 'double';
+columnnames{end+1} = 'alpha (Median)'; vartypes{end+1} = 'double';
 columnnames{end+1} = 'alpha (95% CI)'; vartypes{end+1} = 'cell';
-columnnames{end+1} = 'beta (Mean)'; vartypes{end+1} = 'double';
+columnnames{end+1} = 'beta (Median)'; vartypes{end+1} = 'double';
 columnnames{end+1} = 'beta (95% CI)'; vartypes{end+1} = 'cell';
-columnnames{end+1} = 's (Mean)'; vartypes{end+1} = 'double';
+columnnames{end+1} = 's (Median)'; vartypes{end+1} = 'double';
 columnnames{end+1} = 's (95% CI)'; vartypes{end+1} = 'cell';
 
-if ismember('nexis_sv',fldnames) && (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1)...
-        && ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
-    for i = 1:length(outputs.nexis_sv.Full.init.datalist_nexis_sv)
-        columnnames{end+1} = sprintf('b%d (Mean)',i); vartypes{end+1} = 'double';
-        columnnames{end+1} = sprintf('b%d (95% CI)',i); vartypes{end+1} = 'cell';
-    end
-    for i = 1:length(outputs.nexis_sv.Full.init.datalist_nexis_sv)
-        columnnames{end+1} = sprintf('p%d (Mean)',i); vartypes{end+1} = 'double';
-        columnnames{end+1} = sprintf('p%d (95% CI)',i); vartypes{end+1} = 'cell';
+if ismember('nexis_sv',fldnames) && ~strcmp(outputs.nexis_sv.Full.init.datatype_nexis_sv,'User_specified')
+    if ismember('nexis_sv',fldnames) && (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1)...
+            && ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+        for i = 1:length(outputs.nexis_sv.Full.init.datalist_nexis_sv)
+            columnnames{end+1} = sprintf('b%d (Median)',i); vartypes{end+1} = 'double';
+            columnnames{end+1} = sprintf('b%d (95% CI)',i); vartypes{end+1} = 'cell';
+        end
+        for i = 1:length(outputs.nexis_sv.Full.init.datalist_nexis_sv)
+            columnnames{end+1} = sprintf('p%d (Median)',i); vartypes{end+1} = 'double';
+            columnnames{end+1} = sprintf('p%d (95% CI)',i); vartypes{end+1} = 'cell';
+        end
+    else
+        columnnames{end+1} = 'b (Median)'; vartypes{end+1} = 'double';
+        columnnames{end+1} = 'b (95% CI)'; vartypes{end+1} = 'cell';
+        columnnames{end+1} = 'p (Median)'; vartypes{end+1} = 'double';
+        columnnames{end+1} = 'p (95% CI)'; vartypes{end+1} = 'cell';
     end
 else
-    columnnames{end+1} = 'b (Mean)'; vartypes{end+1} = 'double';
-    columnnames{end+1} = 'b (95% CI)'; vartypes{end+1} = 'cell';
-    columnnames{end+1} = 'p (Mean)'; vartypes{end+1} = 'double';
-    columnnames{end+1} = 'p (95% CI)'; vartypes{end+1} = 'cell';
+    if ismember('nexis_sv',fldnames) && (size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)>1)...
+            && ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+        for i = 1:size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)
+            columnnames{end+1} = sprintf('b%d (Median)',i); vartypes{end+1} = 'double';
+            columnnames{end+1} = sprintf('b%d (95% CI)',i); vartypes{end+1} = 'cell';
+        end
+        for i = 1:size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)
+            columnnames{end+1} = sprintf('p%d (Median)',i); vartypes{end+1} = 'double';
+            columnnames{end+1} = sprintf('p%d (95% CI)',i); vartypes{end+1} = 'cell';
+        end
+    else
+        columnnames{end+1} = 'b (Median)'; vartypes{end+1} = 'double';
+        columnnames{end+1} = 'b (95% CI)'; vartypes{end+1} = 'cell';
+        columnnames{end+1} = 'p (Median)'; vartypes{end+1} = 'double';
+        columnnames{end+1} = 'p (95% CI)'; vartypes{end+1} = 'cell';
+    end
+
 end
 
 ts = outputs.(fldnames{1}).Full.time_stamps;
@@ -93,8 +113,10 @@ for k = 1:length(rownames)
     index = 1;
     if ismember('nexis_sv',fldnames)
         typenames = outputs.nexis_sv.Full.init.datalist_nexis_sv;
-        if isnumeric(typenames)
+        if isnumeric(typenames) && ~strcmp(outputs.nexis_sv.Full.init.datatype_nexis_sv,'User_specified')
             typenames = IndexName(typenames,outputs.nexis_sv.Full.init.datatype_nexis_sv);
+        else
+            typenames = {'User specified'};
         end
 
         for i = 1:length(typenames)
@@ -138,11 +160,20 @@ for k = 1:length(rownames)
         %     inclinds(5) = NaN;
         % end
         params = params(~isnan(inclinds));
-        if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) && ...
-                (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1) && ...
-                ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
-            params = [params, zeros(1,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv)-1))];
+        if ismember('nexis_sv',fldnames) && ~isequal(typenames,{'User specified'})
+            if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) && ...
+                    (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1) && ...
+                    ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+                params = [params, zeros(1,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv)-1))];
+            end
+        else
+            if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) && ...
+                    (size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)>1) && ...
+                    ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+                params = [params, zeros(1,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv)-1))];
+            end
         end
+        
         for i = 1:length(params)
             summarytable{k,index} = params(i); index = index + 1;
             summarytable{k,index} = {[params(i) params(i)]}; index = index + 1;
@@ -152,10 +183,10 @@ for k = 1:length(rownames)
         for i = 1:size(params,1)
             params(i,:) = outputs.(fldnames{k}).(subfldnames{i}).param_fit;
         end
-        params_mean = mean(params); 
+        params_median = median(params); 
         params_ci95_lb = prctile(params,2.5,1); params_ci95_ub = prctile(params,97.5,1);
         params_ci95 = cat(1,params_ci95_lb,params_ci95_ub);
-        inclinds = 1:length(params_mean);
+        inclinds = 1:length(params_median);
         % if ~logical(outputs.(fldnames{k}).Full.init.w_dir)
         %     inclinds(4) = NaN;
         % end
@@ -165,19 +196,29 @@ for k = 1:length(rownames)
         % else
         %     inclinds(5) = NaN;
         % end
-        params_mean = params_mean(~isnan(inclinds)); 
+        params_median = params_median(~isnan(inclinds)); 
         params_ci95 = params_ci95(:,~isnan(inclinds));
-        if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) &&...
-                (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1) &&...
-                ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
-            params_mean = [params_mean, zeros(1,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv)-1))];
-            params_ci95 = [params_ci95, zeros(2,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv))-1)];
+        if ~isequal(typenames,{'User specified'})
+            if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) &&...
+                    (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1) &&...
+                    ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+                params_median = [params_median, zeros(1,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv)-1))];
+                params_ci95 = [params_ci95, zeros(2,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv))-1)];
+            end
+        else
+            if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) &&...
+                    (size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)>1) &&...
+                    ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
+                params_median = [params_median, zeros(1,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv)-1))];
+                params_ci95 = [params_ci95, zeros(2,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv))-1)];
+            end
         end
-        for i = 1:length(params_mean)
-            summarytable{k,index} = params_mean(i); index = index + 1;
+        for i = 1:length(params_median)
+            summarytable{k,index} = params_median(i); index = index + 1;
             summarytable{k,index} = {params_ci95(:,i).'}; index = index + 1;
         end
     end
+
     for i = 1:length(ts)
         summarytable{k,index} = outputs.(fldnames{k}).Full.results.Corrs(i); index = index + 1;       
     end

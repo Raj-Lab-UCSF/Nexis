@@ -145,12 +145,12 @@ outputs.nexis_global = struct;
 if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     fprintf('Creating Optimal NexIS:global Model\n');
     time_stamps = tpts.(ipR.study);
-    if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
+    if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to connectome space for simulation/comparison
         pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
-        if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to CCF space for model init.
+        if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to connectome space for model init.
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
             seed_location = pathology(:,1);
@@ -161,6 +161,8 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
     else % Use pathology and seed as is
         pathology_raw = data426.(ipR.study);
         pathology = normalizer(pathology_raw,ipR.normtype);
+        pathology_orig = pathology;
+        time_stamps_orig = time_stamps;
         if isnan(seed426.(ipR.study)) % Use timepoint 1 pathology as init. for NaN seed (i.e., run from baseline)
             seed_location = pathology(:,1);
             pathology = pathology(:,2:end);
@@ -169,8 +171,6 @@ if ~logical(ipR.bootstrapping) % No bootstrapping of parameters
         else
             seed_location = seed426.(ipR.study);
         end
-        pathology_orig = pathology;
-        time_stamps_orig = time_stamps;
     end
     U = zeros(size(C,1),1);
     if any(isnan(seed_location))
@@ -351,7 +351,7 @@ else
     for i = 1:ipR.niters
         fldname = sprintf('Iter_%d',i);
         time_stamps = tpts.(ipR.study);
-        if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
+        if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to connectome space for simulation/comparison
             pathology_raw = data426.(ipR.study);
             notnaninds = find(~isnan(pathology_raw(:,1)));
             settonansize = round((1-ipR.resample_rate)*length(notnaninds));
@@ -375,7 +375,7 @@ else
             % pathology = normalizer(pathology_raw,ipR.normtype);
             % pathology_orig = pathology;
             % time_stamps_orig = time_stamps;
-            if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to CCF space for model init.
+            if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to connectome space for model init.
                 seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
             else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
                 seed_location = pathology(:,1);
@@ -586,12 +586,12 @@ else
     fprintf('Creating Optimal NexIS:global Model\n');
     time_stamps = tpts.(ipR.study);
 
-    if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to CCF space for simulation/comparison
+    if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to connectome space for simulation/comparison
         pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
-        if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to CCF space for model init.
+        if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to connectome space for model init.
             seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
             seed_location = pathology(:,1);
@@ -602,6 +602,7 @@ else
     else % Use pathology and seed as is
         pathology_raw = data426.(ipR.study);
         pathology = normalizer(pathology_raw,ipR.normtype);
+        pathology_orig = pathology;
         time_stamps_orig = time_stamps;
         if isnan(seed426.(ipR.study)) % Use timepoint 1 pathology as init. for NaN seed (i.e., running from baseline)
             seed_location = pathology(:,1);
@@ -611,7 +612,6 @@ else
         else
             seed_location = seed426.(ipR.study);
         end
-        pathology_orig = pathology;
     end
     U = zeros(size(C,1),1);
     if any(isnan(seed_location))
@@ -631,7 +631,7 @@ else
         
     % Store all outputs
     if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) 
-        pathology_fvalcalc = pathology; % need pathology in CCF space for cost function input
+        pathology_fvalcalc = pathology; % need pathology in connectome space for cost function input
         pathology = CCFToData(pathology,ipR.study,ipR.matdir);% Convert back to data space
         pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
         yopt = CCFToData(yopt,ipR.study,ipR.matdir);
@@ -644,8 +644,12 @@ else
             % yopt_save = yopt;
         end
     else
-        pathology_fvalcalc = pathology; % need pathology in CCF space for cost function input
-        seed_save = seed_location;
+        if isnan(seed426.(ipR.study))
+            seed_save = NaN;
+        else
+            seed_save = seed_location;
+        end
+        pathology_fvalcalc = pathology; % need pathology in connectome space for cost function input
         yopt_save = yopt;
     end
     outputs.nexis_global.Full.data = pathology;
