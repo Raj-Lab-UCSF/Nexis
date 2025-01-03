@@ -1,8 +1,16 @@
 % Demo and debugging script for all major NexIS functions. Make sure you
 % are running this code in the top-level 'Nexis' folder of the repository!
-
+%
+%
+%
 %% 1. NexIS:global
+%
+%
+%
 %% 1.1 No bootstrapping of parameters, preloaded tau studies
+%
+%
+%
 % Running NexIS
 rng(0); clear; clc;
 studylist = {'IbaHippInj','Hurtado'}; % Cell array of test datasets
@@ -79,8 +87,13 @@ end
 if writetofile
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
 end 
-
+%
+%
+%
 %% 1.2 With bootstrapping of parameters, preloaded tau studies
+%
+%
+%
 % Running NexIS
 rng(0); clc;
 studylist = {'IbaHippInj','Hurtado'}; % Cell array of test datasets
@@ -157,8 +170,13 @@ end
 if writetofile
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
 end 
-
+%
+%
+%
 %% 1.3 Preloaded a-syn studies (simple test)
+%
+%
+%
 % Running NexIS
 rng(0); clear; clc;
 studylist = {'asyn_mouse','asyn_human','Henderson','PFF','GCI'}; % Cell array of test datasets
@@ -218,8 +236,13 @@ end
 if writetofile
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
 end
-
+%
+%
+%
 %% 1.4 No bootstrapping, user-specified connectome & pathology
+%
+%
+%
 % Running NexIS
 rng(0); clear; clc;
 matdir = '~/Documents/MATLAB/Nexis_Project/Nexis/raw_data_mouse';
@@ -296,8 +319,13 @@ end
 if writetofile
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
 end
-
+%
+%
+%
 %% 1.5 With bootstrapping, user-specified connectome & pathology
+%
+%
+%
 % Running NexIS
 rng(0); clear; clc;
 matdir = '~/Documents/MATLAB/Nexis_Project/Nexis/raw_data_mouse';
@@ -376,9 +404,17 @@ end
 if writetofile
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
 end
-
+%
+%
+%
 %% 2. NexIS:SV
+%
+%
+%
 %% 2.1 No bootstrapping of parameters, preloaded tau studies
+%
+%
+%
 % Loading previously run NexIS_global struct. Not required to do this to run
 % NexIS:SV, but recommended for efficiency reasons, particularly if running
 % through multiple factors (i.e., genes, cell types) for the same pathology
@@ -501,8 +537,13 @@ if writetofile
     % Save .mat file
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
 end 
-
+%
+%
+%
 %% 2.2 With bootstrapping of parameters, preloaded tau studies
+%
+%
+%
 % Loading previously run NexIS_global struct
 rng(0); clear; clc;
 filename_out = 'NexIS_Wrapper_SV_2-2_WithBootstrap'; % Name of output file
@@ -602,8 +643,13 @@ if writetofile
     % Save .mat file
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
 end
-
+%
+%
+%
 %% 2.3 De novo NexIS:global, with and without bootstrap, Brundin a-syn studies only
+%
+%
+%
 % Running NexIS, testing out running NexIS:global within the NexIS:SV call
 % as well as all combinations of bootstrapping (for completeness)
 rng(0); clear; clc;
@@ -692,8 +738,13 @@ end
 if writetofile
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
 end
-
+%
+%
+%
 %% 2.4 No bootstrapping, user-specified connectome & pathology
+%
+%
+%
 % Loading previously run NexIS_global struct. Not required to do this to run
 % NexIS:SV, but recommended for efficiency reasons, particularly if running
 % through multiple factors (i.e., genes, cell types) for the same pathology
@@ -782,8 +833,13 @@ if writetofile
     % Save .mat file
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
 end 
-
+%
+%
+%
 %% 2.5 With bootstrapping, user-specified connectome & pathology
+%
+%
+%
 % Loading previously run NexIS_global struct. Not required to do this to run
 % NexIS:SV, but recommended for efficiency reasons, particularly if running
 % through multiple factors (i.e., genes, cell types) for the same pathology
@@ -874,6 +930,122 @@ if writetofile
     % Save .mat file
     save([filepath_out filesep filename_out '.mat'],'outputs_all');
 end 
+%
+%
+%
+%% 2.6 Multiple factors, with and without PCA
+%
+%
+%
+% Running NexIS, testing out running NexIS:global within the NexIS:SV call
+% as well as all combinations of bootstrapping (for completeness)
+rng(0); clear; clc;
+studylist = {'IbaHippInj'}; % ***Code won't work with more than one study at a time***
+wdir = 1;
+volcorrect = 1;
+usedataspace = 1;
+param_init = [NaN,0,1,0.5]; % Initial fmincon parameter guesses; {gamma, alpha, beta, s}
+ub = [Inf,Inf,Inf,1]; % Upper bounds for fmincon
+lb = zeros(1,4); % Lower bounds for fmincon
+bootstrapping_glob = [0,1]; % Flag for bootstrapping
+niters_glob = 3;
+bootstrapping_sv = [0,1]; % Flag for bootstrapping for SV
+bounds_type_nexis_sv = {'old','CI_95'}; % Bounds type for NexIS:global parameters
+niters_sv = 3; % Number of bootstrapped iterations for SV
+usepca = [0,1]; % Flag for using PC 1 of cell type distributions
 
+% Pull name of one cell type
+fp_in_sv = '~/Documents/MATLAB/Nexis_Project/Nexis/raw_data_mouse';
+load([fp_in_sv filesep 'CellTypeMaps.mat'],'CellTypeMaps');
+nexsvnames = cell(2,2);
+nexsvnames(1,:) = {'Yao','User_specified'};
+nexsvnames{2,1} = {'Pvalb','Sst','Vip'};
+interneuron_bool = ismember(CellTypeMaps.(nexsvnames{1,1}).classkey,nexsvnames{2,1});
+nexsvnames{2,2} = CellTypeMaps.(nexsvnames{1,1}).maps(:,interneuron_bool);
+
+% Table output parameters
+writetofile = 1; % Create .csv from MATLAB table
+filename_out = 'NexIS_Wrapper_SV_2-6_WithPCA'; % Name of output file
+filepath_out = '~/Documents/MATLAB/Nexis_Project/Results_Files_NexISWrapper'; % Save path
+
+% Run model and create output tables for each dataset, if writetofile = 1
+outputs_all = struct;
+numsims = length(studylist)*length(bootstrapping_glob)*length(usepca)*size(nexsvnames,2);
+sumtable_noPCA = []; % w/ and w/o PCA have to be separate tables
+sumtable_withPCA = [];
+for k = 1:length(usepca)
+    sumtable_k = [];
+    for i = 1:length(studylist) % ***Code won't work with more than one study***
+        study_i = studylist{i};
+        tablename = [filename_out '_' study_i '_PCA_' num2str(k)]; % Create one output table per study
+        for j = 1:length(bootstrapping_glob) % Use bootstrapping parameter for global and SV together  
+            for m = 1:size(nexsvnames,2)
+                tablerowname = ['SV, ' study_i ', '];
+                if bootstrapping_glob(j)
+                    tablerowname = [tablerowname 'with b.s., '];
+                else
+                    tablerowname = [tablerowname 'no b.s., '];
+                end
+                if usepca(k)
+                    tablerowname = [tablerowname 'with PCA'];
+                else
+                    tablerowname = [tablerowname 'no PCA'];
+                end
+                simno = size(nexsvnames,2)*length(studylist)*length(bootstrapping_glob)*(k-1)...
+                    + size(nexsvnames,2)*(j-1) + size(nexsvnames,2)*length(bootstrapping_glob)*(i-1) + m;
+                fprintf('NexIS Wrapper Test 2.6, %d/%d\n',simno,numsims)
+                fprintf('Simulation: %s\n',[tablerowname ', ' nexsvnames{1,m} ' ' 'Interneuron Test ' num2str(m)])
+                outputs_sv_ijkm = NexIS_SV('study',study_i,...
+                                              'w_dir',wdir,...
+                                              'use_dataspace',usedataspace,...
+                                              'bootstrapping',bootstrapping_glob(j),...
+                                              'niters',niters_glob,...
+                                              'volcorrect',volcorrect,...
+                                              'param_init',param_init,...
+                                              'ub',ub,...
+                                              'lb',lb,...
+                                              'datatype_nexis_sv',nexsvnames{1,m},...
+                                              'datalist_nexis_sv',nexsvnames{2,m},...                
+                                              'bootstrapping_nexis_sv',bootstrapping_sv(j),...        
+                                              'bounds_type_nexis_sv',bounds_type_nexis_sv{j},...
+                                              'niters_nexis_sv',niters_sv,...
+                                              'datapca_nexis_sv',usepca(k));
+                fieldname_ijkm = [study_i '_bs_' num2str(bootstrapping_glob(j))...
+                    '_Interneuron_' num2str(m) '_PCA_' num2str(usepca(k))];
+                outputs_all.(fieldname_ijkm) = outputs_sv_ijkm;
+                sumtable_ijkm = Output2Table(outputs_sv_ijkm,0,'null','null'); % create table row
+                sumtable_ijkm.Properties.RowNames{1} = ['Global' tablerowname(3:end)]; % label table row
+                sumtable_ijkm.Properties.RowNames{2} = [tablerowname ', Factor ' num2str(m)]; % label table row
+                if m == 1
+                    sumtable_k = [sumtable_k; sumtable_ijkm]; % add row to table
+                else
+                    sumtable_k = [sumtable_k; sumtable_ijkm(2,:)]; % add row to table
+                end
+            end
+        end
+    end
+    if usepca(k)
+        sumtable_withPCA = [sumtable_withPCA; sumtable_k];
+    else
+        sumtable_noPCA = [sumtable_noPCA; sumtable_k];
+    end
+end
+if writetofile
+    % Non-programmatically splitting and saving tables by study
+    tablename_withPCA = [filename_out '_' 'withPCA'];
+    writetable(sumtable_withPCA,[filepath_out filesep tablename_withPCA '.csv'],'WriteRowNames',true)
+    tablename_noPCA = [filename_out '_' 'noPCA'];
+    writetable(sumtable_noPCA,[filepath_out filesep tablename_noPCA '.csv'],'WriteRowNames',true)
+    % Save .mat file
+    save([filepath_out filesep filename_out '.mat'],'outputs_all');
+end
+% Consistency check appeared to work - both interneuron tests yielded same
+% results (1/2/25)
+%
+%
+%
 %% 3 Relevant plotting of outputs
+%
+%
+%
 % Deal with later

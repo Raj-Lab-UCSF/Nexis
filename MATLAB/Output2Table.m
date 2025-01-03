@@ -60,11 +60,11 @@ if ismember('nexis_sv',fldnames) && ~strcmp(outputs.nexis_sv.Full.init.datatype_
             && ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
         for i = 1:length(outputs.nexis_sv.Full.init.datalist_nexis_sv)
             columnnames{end+1} = sprintf('b%d (Median)',i); vartypes{end+1} = 'double';
-            columnnames{end+1} = sprintf('b%d (95% CI)',i); vartypes{end+1} = 'cell';
+            columnnames{end+1} = sprintf('b%d (95%% CI)',i); vartypes{end+1} = 'cell';
         end
         for i = 1:length(outputs.nexis_sv.Full.init.datalist_nexis_sv)
             columnnames{end+1} = sprintf('p%d (Median)',i); vartypes{end+1} = 'double';
-            columnnames{end+1} = sprintf('p%d (95% CI)',i); vartypes{end+1} = 'cell';
+            columnnames{end+1} = sprintf('p%d (95%% CI)',i); vartypes{end+1} = 'cell';
         end
     else
         columnnames{end+1} = 'b (Median)'; vartypes{end+1} = 'double';
@@ -77,11 +77,11 @@ else
             && ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
         for i = 1:size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)
             columnnames{end+1} = sprintf('b%d (Median)',i); vartypes{end+1} = 'double';
-            columnnames{end+1} = sprintf('b%d (95% CI)',i); vartypes{end+1} = 'cell';
+            columnnames{end+1} = sprintf('b%d (95%% CI)',i); vartypes{end+1} = 'cell';
         end
         for i = 1:size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)
             columnnames{end+1} = sprintf('p%d (Median)',i); vartypes{end+1} = 'double';
-            columnnames{end+1} = sprintf('p%d (95% CI)',i); vartypes{end+1} = 'cell';
+            columnnames{end+1} = sprintf('p%d (95%% CI)',i); vartypes{end+1} = 'cell';
         end
     else
         columnnames{end+1} = 'b (Median)'; vartypes{end+1} = 'double';
@@ -170,7 +170,7 @@ for k = 1:length(rownames)
             if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) && ...
                     (size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)>1) && ...
                     ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
-                params = [params, zeros(1,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv)-1))];
+                params = [params, zeros(1,2*(size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)-1))];
             end
         end
         
@@ -183,7 +183,7 @@ for k = 1:length(rownames)
         for i = 1:size(params,1)
             params(i,:) = outputs.(fldnames{k}).(subfldnames{i}).param_fit;
         end
-        params_median = median(params); 
+        params_median = median(params);
         params_ci95_lb = prctile(params,2.5,1); params_ci95_ub = prctile(params,97.5,1);
         params_ci95 = cat(1,params_ci95_lb,params_ci95_ub);
         inclinds = 1:length(params_median);
@@ -209,8 +209,8 @@ for k = 1:length(rownames)
             if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) &&...
                     (size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)>1) &&...
                     ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)
-                params_median = [params_median, zeros(1,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv)-1))];
-                params_ci95 = [params_ci95, zeros(2,2*(length(outputs.nexis_sv.Full.init.datalist_nexis_sv))-1)];
+                params_median = [params_median, zeros(1,2*(size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2)-1))];
+                params_ci95 = [params_ci95, zeros(2,2*(size(outputs.nexis_sv.Full.init.datalist_nexis_sv,2))-1)];
             end
         end
         for i = 1:length(params_median)

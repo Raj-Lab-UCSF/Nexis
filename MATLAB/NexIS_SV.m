@@ -198,7 +198,7 @@ else
 end
 
 % Define cell type matrix, U
-if ~strcmp(ipR.datatype_nexis_sv,'User_specified') && isempty(ipR.U)
+if ~strcmp(ipR.datatype_nexis_sv,'User_specified')
     if ~isequal(ipR.datalist_nexis_sv,{'random'}) % Don't use; outside-generated spatial null is better
         if ~isnumeric(ipR.datalist_nexis_sv)
             ind_nexis_sv = NameIndex(ipR.datalist_nexis_sv,ipR.datatype_nexis_sv);
