@@ -95,21 +95,21 @@ end
 %
 %
 % Running NexIS
-rng(0); clc;
+rng(0); clear; clc;
 studylist = {'IbaHippInj','Hurtado'}; % Cell array of test datasets
-wdir = 1; % Toggle directionality fitting (s) on and off
-volcorrect = 0; % ***Always keep set to 1***
-usedataspace = 0; % Toggle data space fitting on and off
+wdir = [0,1]; % Toggle directionality fitting (s) on and off
+volcorrect = 1; % ***Always keep set to 1***
+usedataspace = [0,1]; % Toggle data space fitting on and off
 param_init = [NaN,0,1,0.5]; % Initial fmincon parameter guesses; {gamma, alpha, beta, s}
 ub = [Inf,Inf,Inf,1]; % Upper bounds for fmincon
 lb = zeros(1,4); % Lower bounds for fmincon
-excltpts_costfun = {[]}; % Exclude selected time points from cost function
+excltpts_costfun = {[],1}; % Exclude selected time points from cost function
 bootstrapping_glob = 1; % Flag for bootstrapping
 niters_glob = 3; % Number of bootstrapped iterations (does nothing if bootstrap flag is 0)
 
 % Table output parameters
 writetofile = 1; % Create .csv from MATLAB table
-filename_out = 'NexIS_Wrapper_Global_1-2_WithBootstrap_ccf_test'; % Name of output file
+filename_out = 'NexIS_Wrapper_Global_1-2_WithBootstrap'; % Name of output file
 filepath_out = '~/Documents/MATLAB/Nexis_Project/Results_Files_NexISWrapper'; % Save path
 
 % Run model and create output tables for each dataset, if writetofile = 1
