@@ -1,4 +1,4 @@
-function PerTimepointPlot_sbeta(outstruct,usebeta,savenclose_,figdir_)
+function PerTimepointPlot_sbeta(outstruct,use_s,savenclose_,figdir_)
 
 rng(0);
 studynames = fieldnames(outstruct);
@@ -14,7 +14,7 @@ for i = 1:size(sbetavals,1)
     resstruct = outstruct.(studynames{i}).('fit_s');
     for k = 1:length(tptnames)
         resstruct_tpt = resstruct.(tptnames{k}).nexis_global.Full;
-        if usebeta
+        if ~use_s
             sbetavals(i,k) = resstruct_tpt.param_fit(3);
         else
             sbetavals(i,k) = resstruct_tpt.param_fit(4);
@@ -39,7 +39,7 @@ for i = 1:length(studynames)
     plothands = [plothands,s];
 end
 xticks([0,3,6,9]); xlim([0,10]); xlabel('Time (Months)')
-if usebeta
+if ~use_s
     ylabel('\beta');
     yplotmax = max(sbetavals(:)); yplotmin = min(sbetavals(:));
     ytickvec = [yplotmin,(yplotmax+yplotmin)/2,yplotmax];
@@ -58,7 +58,7 @@ legend(plothands,studylabels,'Location',loc,'NumColumns',3,'FontSize',20,'box','
 set(gca,'FontSize',24,'FontName','Times','box','on');
 
 if savenclose_
-    if usebeta
+    if ~use_s
         print([figdir_ filesep 'pertimepointplot_beta'],'-dtiffn','-r300'); close;
     else
         print([figdir_ filesep 'pertimepointplot_s'],'-dtiffn','-r300'); close;

@@ -7,11 +7,15 @@ output_dir = '/Users/justintorok/Documents/MATLAB/Nexis_Project/Results_Tables_T
 load([matdir filesep 'Connectomes.mat'],'Connectomes');
 load([matdir filesep 'Mouse_Tauopathy_Data_HigherQ.mat'],'mousedata_struct')
 studynames = fieldnames(mousedata_struct);
-studynames(ismember(studynames,'IbaP301S')) = []; % Remove this study 
+studynames(ismember(studynames,'IbaP301S')) = []; % Remove this study, too few time points
 C = Connectomes.default; 
 
 %% 1. Model-free analysis
-%% 1.1 Graph metric analyses
+%% 1.1 Connectome heatmap
+savenclose = 0;
+AMBCAHeatmap(C,savenclose,figdir);
+
+%% 1.2 Graph metric analyses
 studynames_plot = {'IbaStrInj'};
 savenclose = 0;
 whichplots = {'C_seed','All'};
@@ -25,15 +29,13 @@ end
 [R_vals, ttest_results] = CompareGraphMetricPlot(mousedata_struct,C,tpt_flag,...
     matdir,savenclose,figdir);
 
-%% 1.2 Connectome heatmap
-savenclose = 1;
-AMBCAHeatmap(C,savenclose,figdir);
-
 %% 1.3 Pathology brainframes, all timepoints
-datasets_bf = studynames;
-% datasets_bf = {'IbaStrInj'};
-tptsplot = 'All';
-savenclose = 1;
+% datasets_bf = studynames; % note that xfac weighting may need to be 
+% adjusted for different datasets; currently set up for IbaStrInj, which is
+% featured in the manuscript
+datasets_bf = {'IbaStrInj'};
+tptsplot = 'All'; 
+savenclose = 0;
 for i = 1:length(datasets_bf)
     BrainframePathologyPlot(mousedata_struct,datasets_bf{i},tptsplot,matdir,...
         savenclose,figdir)
@@ -114,6 +116,7 @@ RvstPlots(outputs_all,tpt_plot,1,matdir,savenclose,figdir);
 BrainframeModelPredPlot(outputs_all,datset_bf,matdir,savenclose,figdir);
 
 %% 2.3 Per-timepoint models, Lin R cost function, fix gamma and alpha
+output_dir = '/Users/justintorok/Documents/MATLAB/Nexis_Project'; % DON'T USE 
 % Input parameters
 saveoutputs = 1;
 outputs_all_tpt = struct;
@@ -125,6 +128,7 @@ w_dir = 1;
 volcorrect = 1;
 bootstrapping = 0;
 exclseed_outputs = 0;
+studynames = {'IbaStrInj','Hurtado'};
 
 % Run NexIS_global
 for i = 1:length(studynames)
@@ -168,31 +172,31 @@ if saveoutputs
 end
 
 %% 2.4 Figures per 2.3
-preload = 1;
 filename_out = 'outputs_all_tpt_fixgammaalpha';
+preload = 1;
 if preload
     load([output_dir filesep filename_out '.mat'],'outputs_all_tpt');
 end
-savenclose = 1;
+savenclose = 0;
 pertpt = 1;
 
-% [R,s,tstatstruct] = CompareDirPlots_deltaR_s(outputs_all_tpt,pertpt,savenclose,figdir);
-% save([output_dir filesep 'CompareDirPerTpt.mat'],'R','s','tstatstruct');
-% plottypes = {'alpha_s','beta_s','beta_alpha'};
-% for i = 1:length(plottypes)
-%     [amat,bmat,smat] = salphabetaPlot(outputs_all_tpt,plottypes{i},savenclose,figdir);
-% end
+[R_fix,s_fix,tstatstruct_fix] = CompareDirPlots_deltaR_s(outputs_all_tpt,pertpt,savenclose,figdir);
+% save([output_dir filesep 'CompareDirPerTpt.mat'],'R_fix','s_fix','tstatstruct_fix');
+plottypes = {'alpha_s','beta_s','beta_alpha'};
+for i = 1:length(plottypes)
+    [amat,bmat,smat] = salphabetaPlot(outputs_all_tpt,plottypes{i},savenclose,figdir);
+end
 
 for i = 1:2
     PerTimepointPlot_sbeta(outputs_all_tpt,i-1,savenclose,figdir);
     PerTimepointRegressionPlot_sbeta(outputs_all_tpt,i-1,savenclose,figdir);
-%     CorrComparePlot_Combined(outputs_all,outputs_all_tpt,i-1,savenclose,figdir);
+    % CorrComparePlot_Combined(outputs_all,outputs_all_tpt,i-1,savenclose,figdir);
 end
 
 %% 2.5.1 Longitudinal models, bootstrapping
 % Input parameters
 saveoutputs = 1;
-filename_out = 'outputs_all_bs_new';
+filename_out = 'outputs_all_bs';
 outputs_all = struct;
 modelnames = {'fit_s'};
 use_dataspace = 1;
@@ -237,7 +241,7 @@ end
 
 %% 2.6 Figure per 2.3
 preload = 1;
-filename_out_bs = 'outputs_all_bs_new';
+filename_out_bs = 'outputs_all_bs';
 filename_out = 'outputs_all';
 if preload
     load([output_dir filesep filename_out_bs '.mat'],'outputs_all');

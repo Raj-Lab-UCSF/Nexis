@@ -34,6 +34,7 @@ fxntol_ = 1e-8;
 steptol_ = 1e-12;
 maxeval_ = 10000;
 bootstrapping_ = 0;
+bootstrapping_usemedian_ = 0;
 resample_rate_ = 0.8;
 niters_ = 100;
 verbose_ = 0;
@@ -74,6 +75,7 @@ addParameter(ip, 'fxntol', fxntol_, validScalar);
 addParameter(ip, 'algo', algo_, validChar);
 addParameter(ip, 'maxeval', maxeval_, validScalar);
 addParameter(ip, 'bootstrapping', bootstrapping_, validBoolean);
+addParameter(ip, 'bootstrapping_usemedian', bootstrapping_usemedian_, validBoolean);
 addParameter(ip, 'resample_rate', resample_rate_, validScalar);
 addParameter(ip, 'niters', niters_, validScalar);
 addParameter(ip, 'verbose', verbose_, validBoolean);
@@ -626,7 +628,11 @@ else
     end
     
     % Evaluate NexIS:global with best estimate of parameters
-    param_opt = median(param_fits); % Used mean before, median should be better estimator
+    if ipR.bootstrapping_usemedian
+        param_opt = median(param_fits); % Used mean before, median should be better estimator
+    else
+        param_opt = mean(param_fits);
+    end
     yopt = NexIS_fun(C,U,time_stamps,seed_location,param_opt,ipR.solvetype,ipR.volcorrect,ipR.matdir);
         
     % Store all outputs

@@ -115,7 +115,7 @@ for k = 1:length(rownames)
         typenames = outputs.nexis_sv.Full.init.datalist_nexis_sv;
         if isnumeric(typenames) && ~strcmp(outputs.nexis_sv.Full.init.datatype_nexis_sv,'User_specified')
             typenames = IndexName(typenames,outputs.nexis_sv.Full.init.datatype_nexis_sv);
-        else
+        elseif strcmp(outputs.nexis_sv.Full.init.datatype_nexis_sv,'User_specified')
             typenames = {'User specified'};
         end
 
@@ -198,7 +198,7 @@ for k = 1:length(rownames)
         % end
         params_median = params_median(~isnan(inclinds)); 
         params_ci95 = params_ci95(:,~isnan(inclinds));
-        if ~isequal(typenames,{'User specified'})
+        if ismember('nexis_sv',fldnames) && ~isequal(typenames,{'User specified'})
             if strcmp('nexis_global',fldnames{k}) && ismember('nexis_sv',fldnames) &&...
                     (length(outputs.nexis_sv.Full.init.datalist_nexis_sv)>1) &&...
                     ~logical(outputs.nexis_sv.Full.init.datapca_nexis_sv)

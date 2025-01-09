@@ -38,6 +38,7 @@ fxntol_ = 1e-8;
 steptol_ = 1e-12;
 maxeval_ = 10000;
 bootstrapping_ = 0;
+bootstrapping_usemedian_ = 0;
 resample_rate_ = 0.8;
 niters_ = 100;
 verbose_ = 0;
@@ -45,6 +46,7 @@ fmindisplay_ = 0;
 outputs_nexisglobal_ = [];
 bounds_type_nexis_sv_ = 'old'; % 'old', 'none', 'unconstrained', 'CI_X' where X is the percent
 bootstrapping_nexis_sv_ = 0;
+bootstrapping_nexis_sv_usemedian_ = 0;
 resample_rate_nexis_sv_ = 0.8;
 niters_nexis_sv_ = 100;
 verbose_nexis_sv_ = 0;
@@ -94,6 +96,7 @@ addParameter(ip, 'fxntol', fxntol_, validScalar);
 addParameter(ip, 'algo', algo_, validChar);
 addParameter(ip, 'maxeval', maxeval_, validScalar);
 addParameter(ip, 'bootstrapping', bootstrapping_, validBoolean);
+addParameter(ip, 'bootstrapping_usemedian', bootstrapping_usemedian_, validBoolean);
 addParameter(ip, 'resample_rate', resample_rate_, validScalar);
 addParameter(ip, 'niters', niters_, validScalar);
 addParameter(ip, 'verbose', verbose_, validBoolean);
@@ -101,6 +104,7 @@ addParameter(ip, 'fmindisplay', fmindisplay_, validBoolean);
 addParameter(ip, 'outputs_nexisglobal', outputs_nexisglobal_);
 addParameter(ip, 'bounds_type_nexis_sv', bounds_type_nexis_sv_, validBoundsType);
 addParameter(ip, 'bootstrapping_nexis_sv', bootstrapping_nexis_sv_, validBoolean);
+addParameter(ip, 'bootstrapping_nexis_sv_usemedian', bootstrapping_nexis_sv_usemedian_, validBoolean);
 addParameter(ip, 'resample_rate_nexis_sv', resample_rate_nexis_sv_, validScalar);
 addParameter(ip, 'niters_nexis_sv', niters_nexis_sv_, validScalar);
 addParameter(ip, 'verbose_nexis_sv', verbose_nexis_sv_, validBoolean);
@@ -199,7 +203,7 @@ end
 
 % Define cell type matrix, U
 if ~strcmp(ipR.datatype_nexis_sv,'User_specified')
-    if ~isequal(ipR.datalist_nexis_sv,{'random'}) % Don't use; outside-generated spatial null is better
+    if ~isequal(ipR.datalist_nexis_sv,{'random'})
         if ~isnumeric(ipR.datalist_nexis_sv)
             ind_nexis_sv = NameIndex(ipR.datalist_nexis_sv,ipR.datatype_nexis_sv);
         else
@@ -217,7 +221,7 @@ if ~strcmp(ipR.datatype_nexis_sv,'User_specified')
             U = datstruct_ct.CellTypeMaps.(ipR.datatype_nexis_sv).maps(:,ind_nexis_sv);  
         end
     else
-        U = rand(size(C,1),1);
+        U = rand(size(C,1),1); % uniformly distributed white noise
     end
 else
     U = ipR.datalist_nexis_sv;
@@ -318,7 +322,11 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     if size(param_inits,1) == 1
         param_init = param_inits;
     else
-        param_init = mean(param_inits); % Was originally mean, median probably better estimator        
+        if ipR.bootstrapping_usemedian
+            param_init = median(param_inits); % Was originally mean, median probably better estimator 
+        else
+            param_init = mean(param_inits); % Was originally mean, median probably better estimator 
+        end
     end
     if strcmp(ipR.bounds_type_nexis_sv,'none') % fix all global parameters
         ub = param_init; 
@@ -584,7 +592,11 @@ else
         if size(param_inits,1) == 1
             param_init = param_inits;
         else
-            param_init = mean(param_inits); % Was originally mean, median probably better estimator        
+            if ipR.bootstrapping_usemedian
+                param_init = median(param_inits); % Was originally mean, median probably better estimator 
+            else
+                param_init = mean(param_inits); % Was originally mean, median probably better estimator 
+            end    
         end
         if strcmp(ipR.bounds_type_nexis_sv,'none') % fix all global parameters
             ub = param_init; 
@@ -818,7 +830,11 @@ else
     end
     
     % Evaluate NexIS:global with best estimate of parameters
-    param_opt = median(param_fits); % Used mean before, median should be better estimator
+    if ipR.bootstrapping_nexis_sv_usemedian
+        param_opt = median(param_fits); % Was originally mean, median probably better estimator 
+    else
+        param_opt = mean(param_fits); % Was originally mean, median probably better estimator 
+    end
     yopt = NexIS_fun(C,U,time_stamps,seed_location,param_opt,ipR.solvetype,ipR.volcorrect,ipR.matdir);
 
     % Store all outputs
