@@ -15,7 +15,7 @@
 % Output:
 % y  =  NexIS predicted vectors (columns) at each time stamp
 
-function [y,A] = NexIS_fun(C_,U_,time_stamps_,x0,params_,solvetype_,volcorrect_,matdir_)
+function [y,A] = NexIS_fun(C_,U_,time_stamps_,x0,params_,solvetype_,volcorrect_,volumes_,matdir_)
 if nargin < 8
     matdir_ = [cd filesep 'raw_data_mouse'];
     if nargin < 7
@@ -67,8 +67,12 @@ s_b = U_ * b;
 S_b = repmat(s_b,1,length(s_b)) + ones(length(s_b));
 L = L_raw .* S_b.'; 
 if logical(volcorrect_)
-    load([matdir_ filesep 'DefaultAtlas.mat'], 'DefaultAtlas');
-    voxels_2hem = DefaultAtlas.volumes;
+    if isempty(volumes_)
+        load([matdir_ filesep 'DefaultAtlas.mat'], 'DefaultAtlas');
+        voxels_2hem = DefaultAtlas.volumes;
+    else
+        voxels_2hem = volumes_;
+    end
 else
     voxels_2hem = ones(size(L,1),1);
 end

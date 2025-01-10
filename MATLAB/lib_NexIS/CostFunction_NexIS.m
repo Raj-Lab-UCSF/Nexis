@@ -8,8 +8,8 @@
 % param((n_types+5):(2*n_types+4)) = p
 
 function f = CostFunction_NexIS(params_,C_,U_,time_stamps_,seed_,pathol_,...
-    solvetype_,volcorrect_,costfun_,excltpts_costfun_,exclseed_costfun_,...
-    use_dataspace_,studyname_,logtrans_,lambdaval_,matdir_)
+    solvetype_,volcorrect_,volumes_,costfun_,excltpts_costfun_,exclseed_costfun_,...
+    use_dataspace_,studyname_,regions_,logtrans_,lambdaval_,matdir_)
 
 LinRcalc = @(x,y) 2*corr(x,y)*std(x)*std(y)/(std(x)^2 + std(y)^2 + (mean(x) - mean(y))^2);
 
@@ -19,10 +19,13 @@ seedregs = seed_;
 s_ = params_(4);
 
 % Calculate predictions y with NexIS
-predicted = NexIS_fun(C_,U_,ts,seedregs,params_,solvetype_,volcorrect_,matdir_);
-if use_dataspace_ && ~strcmp(studyname_,'User-specified') 
-    predicted = CCFToData(predicted,studyname_,matdir_);
-    pathology = CCFToData(pathology,studyname_,matdir_);
+predicted = NexIS_fun(C_,U_,ts,seedregs,params_,solvetype_,volcorrect_,volumes_,matdir_);
+if use_dataspace_ 
+    if ~strcmp(studyname_,'User_specified')
+        regions_ = [];
+    end
+    predicted = CCFToData(predicted,studyname_,regions_,matdir_);
+    pathology = CCFToData(pathology,studyname_,regions_,matdir_);
 end
 
 % Exclude selected time points from cost function
@@ -32,7 +35,7 @@ predicted(:,excltpts_costfun_) = [];
 
 % Remove seed regions from cost function
 if logical(exclseed_costfun_) && ~isequal(seedregs,NaN)
-    seedbin = CCFToData(seedregs,studyname_,matdir_);
+    seedbin = CCFToData(seedregs,studyname_,regions_,matdir_);
     seedbin = logical(seedbin);
     predicted(seedbin,:) = [];
     pathology(seedbin,:) = [];

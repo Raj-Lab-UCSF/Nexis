@@ -118,13 +118,20 @@ for k = 1:length(rownames)
         elseif strcmp(outputs.nexis_sv.Full.init.datatype_nexis_sv,'User_specified')
             typenames = {'User specified'};
         end
-
-        for i = 1:length(typenames)
-            if strcmp('nexis_global',rownames{k})
-                summarytable{k,index} = "None"; index = index + 1;
-            else
-                summarytable{k,index} = string(typenames{i}); index = index + 1;
+        
+        if length(typenames) > 1
+            typestr = [];
+            for m = 1:length(typenames)
+                typestr = [typestr typenames{m} ', '];
             end
+            typestr = typestr(1:(end-2));
+        else
+            typestr = typenames{1};
+        end
+        if strcmp('nexis_global',rownames{k})
+            summarytable{k,index} = "None"; index = index + 1;
+        else
+            summarytable{k,index} = string(typestr); index = index + 1;
         end
     else
         summarytable{k,index} = "None"; index = index + 1;
@@ -143,7 +150,6 @@ for k = 1:length(rownames)
     else
         summarytable{k,index} = "No"; index = index + 1;
     end    
-        
     summarytable{k,index} = string(outputs.(fldnames{k}).Full.init.costfun); index = index + 1;
     
     subfldnames = fieldnames(outputs.(fldnames{k}));

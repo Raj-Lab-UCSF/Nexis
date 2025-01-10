@@ -14,6 +14,7 @@ C_ = [];
 data_ = [];
 tpts_ = [];
 seed_ = [];
+regions_ = [];
 use_dataspace_ = 0;
 matdir_ = [cd filesep 'raw_data_mouse'];
 
@@ -22,6 +23,7 @@ costfun_ = 'linr'; % see /lib_NexIS/CostFunction_NexIS.m for options
 lambda_ = 0; % see /lib_NexIS/CostFunction_NexIS.m for options
 solvetype_ = 'analytic';
 volcorrect_ = 1;
+volumes_ = [];
 exclseed_costfun_ = 0;
 excltpts_costfun_ = [];
 exclseed_outputs_ = 0;
@@ -74,12 +76,14 @@ addParameter(ip, 'C', C_);
 addParameter(ip, 'data',data_);
 addParameter(ip, 'tpts',tpts_);
 addParameter(ip, 'seed', seed_);
+addParameter(ip, 'regions', regions_);
 addParameter(ip, 'matdir', matdir_);
 addParameter(ip, 'use_dataspace', use_dataspace_, validBoolean);
 addParameter(ip, 'costfun', costfun_, validChar);
 addParameter(ip, 'lambda', lambda_, validScalar);
 addParameter(ip, 'solvetype', solvetype_, validST);
 addParameter(ip, 'volcorrect', volcorrect_, validBoolean);
+addParameter(ip, 'volumes', volumes_);
 addParameter(ip, 'exclseed_costfun', exclseed_costfun_, validBoolean);
 addParameter(ip, 'excltpts_costfun', excltpts_costfun_);
 addParameter(ip, 'exclseed_outputs', exclseed_outputs_, validBoolean);
@@ -280,12 +284,12 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     fprintf('Creating Optimal NexIS:SV Model\n');
     time_stamps = tpts.(ipR.study);
     if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to connectome space for simulation/comparison
-        pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
+        pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.regions,ipR.matdir);
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
         if ~isnan(seed426.(ipR.study)) % Convert not NaN seed to connectome space for model init.
-            seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
+            seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.regions,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
             seed_location = pathology(:,1);
             pathology = pathology(:,2:end);
@@ -364,9 +368,9 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     lb = [lb(1:4),-Inf(1,n_types),-Inf(1,n_types)];
     ub = [ub(1:4),Inf(1,n_types),Inf(1,n_types)];
     objfun_handle = @(param) CostFunction_NexIS(param,C,U,time_stamps,...
-        seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.costfun,...
+        seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.volumes,ipR.costfun,...
         ipR.excltpts_costfun,ipR.exclseed_costfun,ipR.use_dataspace,ipR.study,...
-        ipR.logtrans,ipR.lambda,ipR.matdir);
+        ipR.regions,ipR.logtrans,ipR.lambda,ipR.matdir);
     if logical(ipR.fmindisplay_nexis_sv)
         options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
             'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
@@ -378,20 +382,21 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     end
     [param_num, fval_num] = fmincon(objfun_handle,param_init,[],[],[],[],lb,ub,[],options);
     % tinds = setdiff(1:length(time_stamps), ipR.excltpts_costfun);
-    ynum = NexIS_fun(C,U,time_stamps,seed_location,param_num,ipR.solvetype,ipR.volcorrect,ipR.matdir);
+    ynum = NexIS_fun(C,U,time_stamps,seed_location,param_num,ipR.solvetype,...
+        ipR.volcorrect,ipR.volumes,ipR.matdir);
     
     % Store all outputs
     if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) % Convert back to data space
-        pathology = CCFToData(pathology,ipR.study,ipR.matdir);
+        pathology = CCFToData(pathology,ipR.study,ipR.regions,ipR.matdir);
         % pathology = CCFToData(pathology(:,tinds),ipR.study,ipR.matdir);
-        pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
-        ynum = CCFToData(ynum,ipR.study,ipR.matdir);
+        pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.regions,ipR.matdir); 
+        ynum = CCFToData(ynum,ipR.study,ipR.regions,ipR.matdir);
         % ynum = CCFToData(ynum(:,tinds),ipR.study,ipR.matdir);
         baseline = pathology_orig(:,1);
         if isnan(seed426.(ipR.study))
             seed_save = NaN;
         else
-            seed_save = CCFToData(seed_location,ipR.study,ipR.matdir);
+            seed_save = CCFToData(seed_location,ipR.study,ipR.regions,ipR.matdir);
         end
     else
         if isnan(seed426.(ipR.study))
@@ -416,11 +421,13 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     outputs.nexis_sv.Full.fval = fval_num;
     outputs.nexis_sv.Full.init.seed = seed_save;
     outputs.nexis_sv.Full.init.C = C;
+    outputs.nexis_sv.Full.init.regions = ipR.regions;
     outputs.nexis_sv.Full.init.U_norm = U;
     outputs.nexis_sv.Full.init.study = ipR.study;
     outputs.nexis_sv.Full.init.use_dataspace = ipR.use_dataspace;
     outputs.nexis_sv.Full.init.solvetype = ipR.solvetype;
     outputs.nexis_sv.Full.init.volcorrect = ipR.volcorrect;
+    outputs.nexis_sv.Full.init.volumes = ipR.volumes;
     outputs.nexis_sv.Full.init.normtype = ipR.normtype;
     outputs.nexis_sv.Full.init.costfun = ipR.costfun;
     outputs.nexis_sv.Full.init.lambda = ipR.lambda;
@@ -432,6 +439,7 @@ if ~logical(ipR.bootstrapping_nexis_sv)
     outputs.nexis_sv.Full.init.ub = ub;
     outputs.nexis_sv.Full.init.lb = lb;
     outputs.nexis_sv.Full.init.bootstrapping_nexis_sv = ipR.bootstrapping_nexis_sv;
+    outputs.nexis_sv.Full.init.bootstrapping_nexis_sv_usemedian = ipR.bootstrapping_nexis_sv_usemedian;
     outputs.nexis_sv.Full.init.resample_rate_nexis_sv = ipR.resample_rate_nexis_sv;
     outputs.nexis_sv.Full.init.bounds_type_nexis_sv = ipR.bounds_type_nexis_sv;
     outputs.nexis_sv.Full.init.datatype_nexis_sv = ipR.datatype_nexis_sv;
@@ -539,14 +547,14 @@ else
             settonaninds = notnaninds(settonaninds(1:settonansize));
             pathology = pathology_raw;
             pathology_raw(settonaninds,:) = NaN;
-            pathology_raw = DataToCCF(pathology_raw,ipR.study,ipR.matdir);
-            pathology = DataToCCF(pathology,ipR.study,ipR.matdir);
+            pathology_raw = DataToCCF(pathology_raw,ipR.study,ipR.regions,ipR.matdir);
+            pathology = DataToCCF(pathology,ipR.study,ipR.regions,ipR.matdir);
             pathology = normalizer(pathology,ipR.normtype);
             pathology_orig = pathology;
             pathology(isnan(pathology_raw(:,1)),:) = NaN;
             time_stamps_orig = time_stamps;
             if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to connectome space for model init.
-                seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
+                seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.regions,ipR.matdir);
             else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
                 seed_location = pathology(:,1);
                 pathology = pathology(:,2:end);
@@ -635,9 +643,9 @@ else
         ub = [ub(1:4),Inf(1,n_types),Inf(1,n_types)];
 
         objfun_handle = @(param) CostFunction_NexIS(param,C,U,time_stamps,...
-            seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.costfun,...
+            seed_location,pathology,ipR.solvetype,ipR.volcorrect,ipR.volumes,ipR.costfun,...
             ipR.excltpts_costfun,ipR.exclseed_costfun,ipR.use_dataspace,ipR.study,...
-            ipR.logtrans,ipR.lambda,ipR.matdir);
+            ipR.regions,ipR.logtrans,ipR.lambda,ipR.matdir);
         if logical(ipR.fmindisplay)
             options = optimoptions(@fmincon,'Display','final-detailed','Algorithm',ipR.algo,...
                 'MaxFunctionEvaluations',ipR.maxeval,'OptimalityTolerance',ipR.opttol,...
@@ -664,20 +672,21 @@ else
         end
 
         % Solve NexIS SV with the optimized parameters
-        ynum = NexIS_fun(C,U,time_stamps,seed_location,param_num,ipR.solvetype,ipR.volcorrect,ipR.matdir);
+        ynum = NexIS_fun(C,U,time_stamps,seed_location,param_num,ipR.solvetype,...
+            ipR.volcorrect,ipR.volumes,ipR.matdir);
 
         % Store all outputs
         if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) % Convert back to data space
-            pathology = CCFToData(pathology,ipR.study,ipR.matdir);
-            pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
-            ynum = CCFToData(ynum,ipR.study,ipR.matdir);
+            pathology = CCFToData(pathology,ipR.study,ipR.regions,ipR.matdir);
+            pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.regions,ipR.matdir); 
+            ynum = CCFToData(ynum,ipR.study,ipR.regions,ipR.matdir);
             baseline = pathology_orig(:,1);
             ynum_save = ynum;
             if isnan(seed426.(ipR.study))
                 seed_save = NaN;
                 % ynum_save = [pathology_orig(:,1), ynum]; % save ynum with baseline to keep consistent with pathology_orig
             else
-                seed_save = CCFToData(seed_location,ipR.study,ipR.matdir);
+                seed_save = CCFToData(seed_location,ipR.study,ipR.regions,ipR.matdir);
                 % ynum_save = ynum;
             end
         else
@@ -700,10 +709,12 @@ else
         outputs.nexis_sv.(fldname).fval = fval_num;
         outputs.nexis_sv.(fldname).init.seed = seed_save;
         outputs.nexis_sv.(fldname).init.C = C;
+        outputs.nexis_sv.(fldname).init.regions = ipR.regions;
         outputs.nexis_sv.(fldname).init.study = ipR.study;
         outputs.nexis_sv.(fldname).init.use_dataspace = ipR.use_dataspace;
         outputs.nexis_sv.(fldname).init.solvetype = ipR.solvetype;
         outputs.nexis_sv.(fldname).init.volcorrect = ipR.volcorrect;
+        outputs.nexis_sv.(fldname).init.volumes = ipR.volumes;
         outputs.nexis_sv.(fldname).init.normtype = ipR.normtype;
         outputs.nexis_sv.(fldname).init.costfun = ipR.costfun;
         outputs.nexis_sv.(fldname).init.exclseed_costfun = ipR.exclseed_costfun;
@@ -713,6 +724,7 @@ else
         outputs.nexis_sv.(fldname).init.ub = ub;
         outputs.nexis_sv.(fldname).init.lb = lb;
         outputs.nexis_sv.(fldname).init.bootstrapping_nexis_sv = ipR.bootstrapping_nexis_sv;
+        outputs.nexis_sv.(fldname).init.bootstrapping_nexis_sv_usemedian = ipR.bootstrapping_nexis_sv_usemedian;
         outputs.nexis_sv.(fldname).init.resample_rate_nexis_sv = ipR.resample_rate_nexis_sv;
         outputs.nexis_sv.(fldname).init.bounds_type_nexis_sv = ipR.bounds_type_nexis_sv;
         outputs.nexis_sv.(fldname).init.datatype_nexis_sv = ipR.datatype_nexis_sv;
@@ -791,12 +803,12 @@ else
     fprintf('Creating Optimal NexIS:SV Model\n');
     time_stamps = tpts.(ipR.study);
     if size(C,1) ~= size(data426.(ipR.study),1) % Convert all to connectome space for simulation/comparison
-        pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.matdir);
+        pathology_raw = DataToCCF(data426.(ipR.study),ipR.study,ipR.regions,ipR.matdir);
         pathology = normalizer(pathology_raw,ipR.normtype);
         pathology_orig = pathology;
         time_stamps_orig = time_stamps;
         if all(~isnan(seed426.(ipR.study))) % Convert not NaN seed to connectome space for model init.
-            seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.matdir);
+            seed_location = DataToCCF(seed426.(ipR.study),ipR.study,ipR.regions,ipR.matdir);
         else % Use timepoint 1 pathology as init. for NaN seed (e.g., Hurtado et al.)
             seed_location = pathology(:,1);
             pathology = pathology(:,2:end);
@@ -835,20 +847,21 @@ else
     else
         param_opt = mean(param_fits); % Was originally mean, median probably better estimator 
     end
-    yopt = NexIS_fun(C,U,time_stamps,seed_location,param_opt,ipR.solvetype,ipR.volcorrect,ipR.matdir);
+    yopt = NexIS_fun(C,U,time_stamps,seed_location,param_opt,ipR.solvetype,...
+        ipR.volcorrect,ipR.volumes,ipR.matdir);
 
     % Store all outputs
     if ipR.use_dataspace && (size(C,1) ~= size(data426.(ipR.study),1)) 
         pathology_fvalcalc = pathology; % need pathology in connectome space for cost function input
-        pathology = CCFToData(pathology,ipR.study,ipR.matdir);% Convert back to data space
-        pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.matdir); 
-        yopt = CCFToData(yopt,ipR.study,ipR.matdir);
+        pathology = CCFToData(pathology,ipR.study,ipR.regions,ipR.matdir);% Convert back to data space
+        pathology_orig = CCFToData(pathology_orig,ipR.study,ipR.regions,ipR.matdir); 
+        yopt = CCFToData(yopt,ipR.study,ipR.regions,ipR.matdir);
         yopt_save = yopt;
         if isnan(seed426.(ipR.study))
             seed_save = NaN;
             % yopt_save = [pathology_orig(:,1), yopt]; % save yopt with baseline to keep consistent with pathology_orig
         else
-            seed_save = CCFToData(seed_location,ipR.study,ipR.matdir);
+            seed_save = CCFToData(seed_location,ipR.study,ipR.regions,ipR.matdir);
             % yopt_save = yopt;
         end
     else
@@ -874,11 +887,13 @@ else
                                                         pathology_fvalcalc,...
                                                         ipR.solvetype,...
                                                         ipR.volcorrect,...
+                                                        ipR.volumes,...
                                                         ipR.costfun,...
                                                         ipR.excltpts_costfun,...
                                                         ipR.exclseed_costfun,...
                                                         ipR.use_dataspace,...
                                                         ipR.study,...
+                                                        ipR.regions,...
                                                         ipR.logtrans,...
                                                         ipR.lambda,...
                                                         ipR.matdir);
